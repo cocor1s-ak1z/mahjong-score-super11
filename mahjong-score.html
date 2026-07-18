@@ -402,7 +402,7 @@ select.xl-select {
   inset: 0;
   background: rgba(0,0,0,.5);
   z-index: 300;
-  align-items: flex-end; /* スマホは下から */
+  align-items: flex-start; /* スマホは上から */
   justify-content: center;
   padding: 0;
 }
@@ -416,11 +416,11 @@ select.xl-select {
 .xl-modal {
   background: var(--xl-cell);
   border: 1px solid var(--xl-border2);
-  border-radius: 12px 12px 0 0;
-  box-shadow: 0 -4px 24px rgba(0,0,0,.2);
+  border-radius: 0 0 12px 12px; /* 上固定なので下側を丸く */
+  box-shadow: 0 4px 24px rgba(0,0,0,.25);
   width: 100%;
   max-width: 100%;
-  max-height: 92vh;
+  max-height: 85vh; /* キーボード分の余裕を持たせる */
   overflow-y: auto;
   -webkit-overflow-scrolling: touch;
 }
@@ -441,7 +441,7 @@ select.xl-select {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  border-radius: 12px 12px 0 0;
+  border-radius: 0; /* 上固定なので角丸なし */
   position: sticky;
   top: 0;
   z-index: 1;
@@ -1305,23 +1305,11 @@ document.getElementById('round-modal').addEventListener('click', function(e) { i
 
       const modal = overlay.querySelector('.xl-modal');
       if (keyboardHeight > 100) {
-        // キーボードが出た → overlayをキーボードの上の領域に限定、モーダルを上端に
-        overlay.style.position = 'fixed';
-        overlay.style.top = '0';
-        overlay.style.bottom = (keyboardHeight) + 'px';
-        overlay.style.alignItems = 'flex-start';
-        overlay.style.paddingTop = '0';
+        // キーボードが出た → モーダル高さをキーボード分縮める
         modal.style.maxHeight = (currentHeight - 8) + 'px';
-        modal.style.borderRadius = '0 0 12px 12px';
       } else {
         // キーボードが引っ込んだ → 元に戻す
-        overlay.style.position = '';
-        overlay.style.top = '';
-        overlay.style.bottom = '';
-        overlay.style.alignItems = 'flex-end';
-        overlay.style.paddingTop = '0';
-        modal.style.maxHeight = '92vh';
-        modal.style.borderRadius = '12px 12px 0 0';
+        modal.style.maxHeight = '85vh';
       }
     });
 
