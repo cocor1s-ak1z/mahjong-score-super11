@@ -1,0 +1,1175 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>麻雀収支管理</title>
+<style>
+/* ===== リセット ===== */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+:root {
+  /* Excel配色 */
+  --xl-green:    #217346;
+  --xl-green2:   #185c38;
+  --xl-ribbon:   #f3f2f1;
+  --xl-ribbon2:  #e8e6e3;
+  --xl-border:   #d0cdc9;
+  --xl-border2:  #bbb8b5;
+  --xl-cell:     #ffffff;
+  --xl-head:     #e9ebee;
+  --xl-head2:    #d6d9de;
+  --xl-select:   #cce8ff;
+  --xl-select2:  #99d1ff;
+  --xl-text:     #212121;
+  --xl-text2:    #595959;
+  --xl-plus:     #1a6b2a;
+  --xl-minus:    #c00000;
+  --xl-plus-bg:  #e2efda;
+  --xl-minus-bg: #fce4d6;
+  --xl-row-alt:  #f7f8fa;
+  --xl-shadow:   rgba(0,0,0,.12);
+  --font:        'Segoe UI', 'Meiryo UI', 'Meiryo', Arial, sans-serif;
+  --fs-xl: 20px;
+  --fs-lg: 15px;
+  --fs-md: 13px;
+  --fs-sm: 12px;
+}
+
+body {
+  font-family: var(--font);
+  font-size: var(--fs-md);
+  background: #e8e6e3;
+  color: var(--xl-text);
+  min-height: 100vh;
+  padding-bottom: 190px;
+}
+
+/* ===== タイトルバー ===== */
+#titlebar {
+  background: var(--xl-green);
+  color: #fff;
+  padding: 6px 16px 5px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: var(--fs-sm);
+  letter-spacing: .5px;
+}
+#titlebar-name {
+  font-size: 14px;
+  font-weight: 600;
+  flex: 1;
+  text-align: center;
+}
+#titlebar-date { font-size: var(--fs-sm); opacity: .85; }
+
+/* ===== リボン ===== */
+#ribbon {
+  background: var(--xl-ribbon);
+  border-bottom: 2px solid var(--xl-green);
+  padding: 0 8px;
+  display: flex;
+  align-items: stretch;
+  gap: 2px;
+  min-height: 56px;
+}
+.ribbon-group {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 4px 6px 2px;
+  border-right: 1px solid var(--xl-border);
+  gap: 3px;
+}
+.ribbon-group:last-child { border-right: none; }
+.ribbon-group-label {
+  font-size: 10px;
+  color: var(--xl-text2);
+  margin-top: 2px;
+  text-align: center;
+}
+.ribbon-btns { display: flex; gap: 3px; }
+
+/* ===== リボンボタン ===== */
+.rb {
+  font-family: var(--font);
+  font-size: var(--fs-sm);
+  font-weight: 600;
+  cursor: pointer;
+  border: 1px solid transparent;
+  border-radius: 3px;
+  padding: 5px 10px;
+  background: transparent;
+  color: var(--xl-text);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  min-width: 52px;
+  transition: background .1s, border-color .1s;
+  white-space: nowrap;
+}
+.rb:hover { background: var(--xl-ribbon2); border-color: var(--xl-border2); }
+.rb:active { background: #d0cdc9; }
+.rb-icon { font-size: 20px; line-height: 1; }
+.rb-green { color: var(--xl-green); }
+.rb-red   { color: #c00000; }
+.rb-blue  { color: #1f4e79; }
+.rb-org   { color: #c55a11; }
+
+/* ===== 数式バー風 ===== */
+#formula-bar {
+  background: var(--xl-cell);
+  border-bottom: 1px solid var(--xl-border);
+  padding: 4px 12px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: var(--fs-sm);
+  color: var(--xl-text2);
+  min-height: 26px;
+}
+#formula-bar-label {
+  background: var(--xl-head);
+  border: 1px solid var(--xl-border2);
+  border-radius: 2px;
+  padding: 2px 8px;
+  font-size: var(--fs-sm);
+  min-width: 80px;
+  text-align: center;
+}
+#formula-bar-sep { color: var(--xl-border2); font-size: 16px; }
+#formula-bar-value { color: var(--xl-text); }
+
+/* ===== メインレイアウト ===== */
+#main-wrap {
+  max-width: 1100px;
+  margin: 0 auto;
+  padding: 10px 12px 0;
+}
+
+/* ===== シートタブ風 ===== */
+#sheet-tabs {
+  display: flex;
+  align-items: flex-end;
+  gap: 0;
+  margin-bottom: 0;
+}
+.sheet-tab {
+  font-size: var(--fs-sm);
+  padding: 5px 18px;
+  background: var(--xl-ribbon2);
+  border: 1px solid var(--xl-border);
+  border-bottom: none;
+  border-radius: 3px 3px 0 0;
+  cursor: pointer;
+  color: var(--xl-text2);
+  margin-right: 2px;
+}
+.sheet-tab.active {
+  background: var(--xl-cell);
+  color: var(--xl-green);
+  font-weight: 700;
+  border-bottom: 1px solid var(--xl-cell);
+  margin-bottom: -1px;
+  z-index: 1;
+}
+
+/* ===== スプレッドシート本体 ===== */
+.xl-sheet {
+  background: var(--xl-cell);
+  border: 1px solid var(--xl-border);
+  border-radius: 0 3px 3px 3px;
+  overflow: hidden;
+  box-shadow: 0 2px 8px var(--xl-shadow);
+  margin-bottom: 12px;
+}
+
+/* ===== テーブル共通 ===== */
+.xl-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: var(--fs-md);
+}
+.xl-table th {
+  background: var(--xl-head);
+  border: 1px solid var(--xl-border);
+  padding: 5px 10px;
+  text-align: center;
+  font-weight: 700;
+  font-size: var(--fs-sm);
+  color: var(--xl-text2);
+  white-space: nowrap;
+  user-select: none;
+}
+.xl-table td {
+  border: 1px solid var(--xl-border);
+  padding: 5px 10px;
+  text-align: right;
+  font-size: var(--fs-md);
+  background: var(--xl-cell);
+}
+.xl-table td:first-child { text-align: left; }
+.xl-table tr:nth-child(even) td { background: var(--xl-row-alt); }
+.xl-table tr:hover td { background: var(--xl-select) !important; }
+
+/* 行番号列 */
+.xl-rownum {
+  background: var(--xl-head) !important;
+  color: var(--xl-text2);
+  text-align: center !important;
+  font-size: 11px;
+  width: 32px;
+  min-width: 32px;
+  border-right: 2px solid var(--xl-border2) !important;
+}
+
+/* ===== 値の色 ===== */
+.val-plus  { color: var(--xl-plus);  background: var(--xl-plus-bg) !important; font-weight: 700; }
+.val-minus { color: var(--xl-minus); background: var(--xl-minus-bg) !important; font-weight: 700; }
+.val-zero  { color: var(--xl-text2); }
+.val-bold  { font-weight: 700; }
+
+/* ===== 荘一覧テーブル操作列 ===== */
+.xl-action-cell { text-align: center !important; white-space: nowrap; }
+.xl-btn {
+  font-family: var(--font);
+  font-size: 11px;
+  font-weight: 600;
+  padding: 2px 8px;
+  border: 1px solid var(--xl-border2);
+  border-radius: 2px;
+  cursor: pointer;
+  background: var(--xl-ribbon);
+  color: var(--xl-text);
+  margin: 0 2px;
+  transition: background .1s;
+}
+.xl-btn:hover { background: var(--xl-head2); }
+.xl-btn-red { border-color: #c00000; color: #c00000; }
+.xl-btn-red:hover { background: #fce4d6; }
+.xl-btn-green { border-color: var(--xl-green); color: var(--xl-green); }
+.xl-btn-green:hover { background: #e2efda; }
+
+/* ===== 追加行 ===== */
+.xl-add-row td {
+  background: #f0f7f0 !important;
+  border-top: 2px dashed #9dc3a0 !important;
+}
+.xl-add-row:hover td { background: #e2efda !important; }
+.xl-add-link {
+  color: var(--xl-green);
+  font-weight: 600;
+  cursor: pointer;
+  text-decoration: underline;
+  font-size: var(--fs-md);
+  background: none;
+  border: none;
+  font-family: var(--font);
+  padding: 0;
+}
+
+/* ===== 集計フッター ===== */
+#summary-area {
+  position: fixed;
+  bottom: 0; left: 0; right: 0;
+  background: var(--xl-ribbon);
+  border-top: 2px solid var(--xl-green);
+  z-index: 90;
+  padding: 6px 12px 8px;
+  box-shadow: 0 -2px 8px var(--xl-shadow);
+}
+.summary-topbar {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 5px;
+}
+.summary-label {
+  font-size: var(--fs-sm);
+  font-weight: 700;
+  color: var(--xl-green);
+  flex: 1;
+}
+.summary-sort-wrap { display: flex; align-items: center; gap: 5px; font-size: var(--fs-sm); }
+.summary-sort-wrap label { color: var(--xl-text2); }
+select.xl-select {
+  font-family: var(--font);
+  font-size: var(--fs-sm);
+  background: var(--xl-cell);
+  border: 1px solid var(--xl-border2);
+  border-radius: 2px;
+  padding: 3px 6px;
+  color: var(--xl-text);
+}
+.summary-table-wrap { overflow-x: auto; }
+.xl-summary-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: var(--fs-sm);
+  min-width: 520px;
+}
+.xl-summary-table th {
+  background: var(--xl-green);
+  color: #fff;
+  padding: 4px 10px;
+  text-align: right;
+  font-size: var(--fs-sm);
+  border: 1px solid var(--xl-green2);
+  white-space: nowrap;
+}
+.xl-summary-table th:first-child,
+.xl-summary-table th:nth-child(2) { text-align: left; }
+.xl-summary-table td {
+  padding: 4px 10px;
+  text-align: right;
+  border: 1px solid var(--xl-border);
+  background: var(--xl-cell);
+  font-size: var(--fs-sm);
+}
+.xl-summary-table td:first-child { text-align: left; font-weight: 700; }
+.xl-summary-table td:nth-child(2) { text-align: center; }
+.xl-summary-table tr:nth-child(even) td { background: var(--xl-row-alt); }
+.xl-summary-table .val-plus  { color: var(--xl-plus);  background: var(--xl-plus-bg)  !important; font-weight: 700; }
+.xl-summary-table .val-minus { color: var(--xl-minus); background: var(--xl-minus-bg) !important; font-weight: 700; }
+
+/* ===== モーダル ===== */
+.modal-overlay {
+  display: none;
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,.45);
+  z-index: 300;
+  align-items: center;
+  justify-content: center;
+  padding: 16px;
+}
+.modal-overlay.open { display: flex; }
+.xl-modal {
+  background: var(--xl-cell);
+  border: 1px solid var(--xl-border2);
+  border-radius: 4px;
+  box-shadow: 0 8px 32px rgba(0,0,0,.28);
+  width: 100%;
+  max-width: 620px;
+  max-height: 90vh;
+  overflow-y: auto;
+}
+.xl-modal-titlebar {
+  background: var(--xl-green);
+  color: #fff;
+  padding: 8px 14px;
+  font-size: var(--fs-lg);
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+.xl-modal-close {
+  background: none;
+  border: none;
+  color: #fff;
+  font-size: 18px;
+  cursor: pointer;
+  padding: 0 4px;
+  line-height: 1;
+}
+.xl-modal-close:hover { background: rgba(255,255,255,.2); border-radius: 2px; }
+.xl-modal-body { padding: 16px; }
+.xl-modal-footer {
+  border-top: 1px solid var(--xl-border);
+  padding: 10px 16px;
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  background: var(--xl-ribbon);
+}
+
+/* ===== モーダル内フォーム ===== */
+.xl-dialog-btn {
+  font-family: var(--font);
+  font-size: var(--fs-md);
+  font-weight: 600;
+  padding: 6px 20px;
+  border: 1px solid var(--xl-border2);
+  border-radius: 3px;
+  cursor: pointer;
+  background: var(--xl-ribbon);
+  color: var(--xl-text);
+  transition: background .1s;
+}
+.xl-dialog-btn:hover { background: var(--xl-head2); }
+.xl-dialog-btn-primary {
+  background: var(--xl-green);
+  color: #fff;
+  border-color: var(--xl-green2);
+}
+.xl-dialog-btn-primary:hover { background: var(--xl-green2); }
+
+/* 荘入力グリッド */
+.round-input-table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-bottom: 8px;
+}
+.round-input-table th {
+  background: var(--xl-green);
+  color: #fff;
+  padding: 5px 8px;
+  text-align: center;
+  font-size: var(--fs-sm);
+  border: 1px solid var(--xl-green2);
+}
+.round-input-table td {
+  border: 1px solid var(--xl-border);
+  padding: 2px 3px;
+  background: var(--xl-cell);
+}
+.round-input-table tr:nth-child(even) td { background: var(--xl-row-alt); }
+
+.xl-input-cell {
+  width: 100%;
+  font-family: var(--font);
+  font-size: var(--fs-lg);
+  border: none;
+  outline: none;
+  padding: 5px 6px;
+  background: transparent;
+  color: var(--xl-text);
+  text-align: right;
+}
+.xl-input-cell:focus {
+  background: var(--xl-select);
+  outline: 2px solid #1a73e8;
+  outline-offset: -2px;
+}
+.xl-select-cell {
+  width: 100%;
+  font-family: var(--font);
+  font-size: var(--fs-md);
+  border: none;
+  outline: none;
+  padding: 5px 4px;
+  background: transparent;
+  color: var(--xl-text);
+}
+.xl-select-cell:focus {
+  background: var(--xl-select);
+  outline: 2px solid #1a73e8;
+  outline-offset: -2px;
+}
+
+/* ヒント行 */
+.xl-hint {
+  font-size: 11px;
+  color: var(--xl-text2);
+  background: #fff8e1;
+  border: 1px solid #ffe082;
+  border-radius: 2px;
+  padding: 5px 10px;
+  margin-top: 6px;
+}
+
+/* エラー */
+.xl-error {
+  display: none;
+  background: #fce4d6;
+  border: 1px solid #c00000;
+  border-radius: 2px;
+  color: #c00000;
+  font-size: var(--fs-sm);
+  font-weight: 600;
+  padding: 6px 10px;
+  margin-top: 8px;
+}
+.xl-error.show { display: block; }
+
+/* 合計プレビュー */
+#round-total-preview {
+  text-align: right;
+  font-size: var(--fs-sm);
+  color: var(--xl-text2);
+  margin-top: 4px;
+  font-style: italic;
+}
+
+/* 参加者管理 */
+.xl-participant-row {
+  display: flex;
+  align-items: center;
+  border: 1px solid var(--xl-border);
+  margin-bottom: 3px;
+  border-radius: 2px;
+  overflow: hidden;
+}
+.xl-participant-name {
+  flex: 1;
+  padding: 6px 10px;
+  font-size: var(--fs-md);
+  background: var(--xl-cell);
+}
+.xl-participant-row:nth-child(even) .xl-participant-name { background: var(--xl-row-alt); }
+.xl-add-row-form { display: flex; gap: 6px; margin-top: 8px; }
+.xl-text-input {
+  flex: 1;
+  font-family: var(--font);
+  font-size: var(--fs-md);
+  border: 1px solid var(--xl-border2);
+  border-radius: 2px;
+  padding: 6px 8px;
+  outline: none;
+  color: var(--xl-text);
+}
+.xl-text-input:focus { border-color: #1a73e8; outline: 2px solid #cce8ff; outline-offset: -1px; }
+
+/* ===== ステータスバー ===== */
+#statusbar {
+  position: fixed;
+  bottom: 0; left: 0; right: 0;
+  height: 22px;
+  background: var(--xl-green);
+  color: rgba(255,255,255,.85);
+  font-size: 11px;
+  display: flex;
+  align-items: center;
+  padding: 0 12px;
+  gap: 16px;
+  z-index: 80;
+}
+#statusbar span { opacity: .8; }
+
+/* ===== 空状態 ===== */
+.xl-empty {
+  text-align: center;
+  color: var(--xl-text2);
+  font-size: var(--fs-md);
+  padding: 30px;
+  font-style: italic;
+}
+
+/* スクロールバー */
+::-webkit-scrollbar { width: 8px; height: 8px; }
+::-webkit-scrollbar-track { background: var(--xl-ribbon); }
+::-webkit-scrollbar-thumb { background: var(--xl-border2); border-radius: 2px; }
+</style>
+</head>
+<body>
+
+<!-- タイトルバー -->
+<div id="titlebar">
+  <span>🀄</span>
+  <span id="titlebar-name">麻雀収支管理</span>
+  <span id="titlebar-date"></span>
+</div>
+
+<!-- リボン -->
+<div id="ribbon">
+  <div class="ribbon-group">
+    <div class="ribbon-btns">
+      <button class="rb" onclick="saveData()">
+        <span class="rb-icon rb-blue">💾</span>保存
+      </button>
+    </div>
+    <div class="ribbon-group-label">ファイル</div>
+  </div>
+  <div class="ribbon-group">
+    <div class="ribbon-btns">
+      <button class="rb" onclick="openParticipantModal()">
+        <span class="rb-icon">👥</span>参加者
+      </button>
+      <button class="rb" onclick="openRoundModal(null)">
+        <span class="rb-icon rb-green">＋</span>荘追加
+      </button>
+    </div>
+    <div class="ribbon-group-label">データ入力</div>
+  </div>
+  <div class="ribbon-group">
+    <div class="ribbon-btns">
+      <button class="rb" onclick="exportPDF()">
+        <span class="rb-icon rb-org">📄</span>PDF出力
+      </button>
+    </div>
+    <div class="ribbon-group-label">出力</div>
+  </div>
+</div>
+
+<!-- 数式バー -->
+<div id="formula-bar">
+  <div id="formula-bar-label">麻雀収支</div>
+  <span id="formula-bar-sep">│</span>
+  <span id="formula-bar-value">荘一覧・集計シート</span>
+</div>
+
+<!-- メイン -->
+<div id="main-wrap">
+  <!-- シートタブ -->
+  <div id="sheet-tabs">
+    <div class="sheet-tab active">📋 荘一覧</div>
+    <div class="sheet-tab" style="opacity:.5; cursor:default;">📊 集計</div>
+  </div>
+
+  <!-- 荘一覧シート -->
+  <div class="xl-sheet">
+    <table class="xl-table" id="rounds-table">
+      <thead>
+        <tr>
+          <th style="width:32px"></th>
+          <th style="width:70px">荘</th>
+          <th>プレイヤー</th>
+          <th style="width:90px">点数計</th>
+          <th style="width:90px">馬計</th>
+          <th style="width:90px">チップ計</th>
+          <th style="width:90px">合計</th>
+          <th style="width:110px">操作</th>
+        </tr>
+      </thead>
+      <tbody id="rounds-tbody"></tbody>
+    </table>
+  </div>
+</div>
+
+<!-- 集計フッター -->
+<div id="summary-area">
+  <div class="summary-topbar">
+    <span class="summary-label">📊 集計結果</span>
+    <div class="summary-sort-wrap">
+      <label>並び順：</label>
+      <select class="xl-select" id="sort-select" onchange="renderSummary()">
+        <option value="grandTotal">総合計</option>
+        <option value="count">参加数</option>
+        <option value="scoreTotal">点数</option>
+        <option value="umaTotal">馬</option>
+        <option value="chipTotal">チップ</option>
+        <option value="name">名前</option>
+      </select>
+    </div>
+  </div>
+  <div class="summary-table-wrap">
+    <table class="xl-summary-table">
+      <thead>
+        <tr>
+          <th style="text-align:left; width:32px"></th>
+          <th style="text-align:left;">名前</th>
+          <th style="width:60px">参加数</th>
+          <th style="width:90px">点数</th>
+          <th style="width:90px">馬</th>
+          <th style="width:90px">チップ点</th>
+          <th style="width:100px">総合計</th>
+        </tr>
+      </thead>
+      <tbody id="summary-tbody"></tbody>
+    </table>
+  </div>
+</div>
+
+<!-- ステータスバー（集計の下に隠れるので z-index 低め） -->
+<div id="statusbar">
+  <span id="status-rounds">荘数: 0</span>
+  <span id="status-participants">参加者: 0人</span>
+  <span style="margin-left:auto;">麻雀収支管理 v1.0</span>
+</div>
+
+<!-- ===== 参加者管理モーダル ===== -->
+<div class="modal-overlay" id="participant-modal">
+  <div class="xl-modal">
+    <div class="xl-modal-titlebar">
+      <span>👥 参加者管理</span>
+      <button class="xl-modal-close" onclick="closeParticipantModal()">✕</button>
+    </div>
+    <div class="xl-modal-body">
+      <div id="participant-list"></div>
+      <div class="xl-add-row-form">
+        <input type="text" class="xl-text-input" id="new-participant-name"
+               placeholder="名前を入力して追加" maxlength="20"
+               onkeydown="if(event.key==='Enter') addParticipant()">
+        <button class="xl-dialog-btn xl-dialog-btn-primary" onclick="addParticipant()">追加</button>
+      </div>
+      <div class="xl-error" id="participant-error"></div>
+    </div>
+    <div class="xl-modal-footer">
+      <button class="xl-dialog-btn xl-dialog-btn-primary" onclick="closeParticipantModal()">閉じる</button>
+    </div>
+  </div>
+</div>
+
+<!-- ===== 荘入力モーダル ===== -->
+<div class="modal-overlay" id="round-modal">
+  <div class="xl-modal">
+    <div class="xl-modal-titlebar">
+      <span id="round-modal-title">荘入力</span>
+      <button class="xl-modal-close" onclick="closeRoundModal()">✕</button>
+    </div>
+    <div class="xl-modal-body">
+      <table class="round-input-table">
+        <thead>
+          <tr>
+            <th style="width:30px">#</th>
+            <th style="width:120px; text-align:left;">プレイヤー</th>
+            <th style="width:90px">点数</th>
+            <th style="width:90px">馬</th>
+            <th style="width:90px">チップ</th>
+          </tr>
+        </thead>
+        <tbody id="player-rows"></tbody>
+      </table>
+      <div class="xl-hint">
+        ⌨️ 矢印キー・Enter で点数／馬を移動　Tab でチップへ　チップ空欄 → 0 扱い
+      </div>
+      <div id="round-total-preview"></div>
+      <div class="xl-error" id="round-error"></div>
+    </div>
+    <div class="xl-modal-footer">
+      <button class="xl-dialog-btn" onclick="closeRoundModal()">キャンセル</button>
+      <button class="xl-dialog-btn xl-dialog-btn-primary" onclick="saveRound()">💾 保存</button>
+    </div>
+  </div>
+</div>
+
+<script>
+// ===================================================
+//  状態
+// ===================================================
+const STORAGE_KEY = 'mahjong-score-app';
+let state = { date: today(), participants: [], rounds: [] };
+let editingRoundId = null;
+
+// ===================================================
+//  ユーティリティ
+// ===================================================
+function today() {
+  const d = new Date();
+  return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+}
+function fmtDate(iso) { return iso ? iso.replace(/-/g, '/') : ''; }
+function uid() { return Math.random().toString(36).slice(2) + Date.now().toString(36); }
+function valClass(n) { return n > 0 ? 'val-plus' : n < 0 ? 'val-minus' : 'val-zero'; }
+function fmtNum(n) { return n > 0 ? '+' + n : String(n); }
+
+// ===================================================
+//  LocalStorage
+// ===================================================
+function saveData() {
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+  updateFormulaBar('保存完了 ✓');
+  setTimeout(() => updateFormulaBar('荘一覧・集計シート'), 1500);
+}
+function loadData() {
+  const raw = localStorage.getItem(STORAGE_KEY);
+  if (raw) { try { state = JSON.parse(raw); } catch(e) {} }
+}
+
+function updateFormulaBar(msg) {
+  document.getElementById('formula-bar-value').textContent = msg;
+}
+
+// ===================================================
+//  初期化
+// ===================================================
+function init() {
+  loadData();
+  if (!state.date) state.date = today();
+  document.getElementById('titlebar-date').textContent = fmtDate(state.date);
+  renderRounds();
+  renderSummary();
+  updateStatus();
+}
+
+function updateStatus() {
+  document.getElementById('status-rounds').textContent = `荘数: ${state.rounds.length}`;
+  document.getElementById('status-participants').textContent = `参加者: ${state.participants.length}人`;
+}
+
+// ===================================================
+//  荘一覧
+// ===================================================
+function renderRounds() {
+  const tbody = document.getElementById('rounds-tbody');
+  if (state.rounds.length === 0) {
+    tbody.innerHTML = `<tr><td class="xl-rownum"></td><td colspan="7" class="xl-empty">荘がありません。「荘追加」から入力してください。</td></tr>`;
+    updateStatus();
+    return;
+  }
+  tbody.innerHTML = state.rounds.map((r, idx) => {
+    const names = r.players.map(p => {
+      const pt = state.participants.find(x => x.id === p.participantId);
+      return pt ? pt.name : '?';
+    }).join('・');
+    const scoreSum = r.players.reduce((s, p) => s + p.point, 0);
+    const umaSum   = r.players.reduce((s, p) => s + p.uma, 0);
+    const chipSum  = r.players.reduce((s, p) => s + p.chipCount * 5, 0);
+    const total    = scoreSum + umaSum + chipSum;
+    return `<tr>
+      <td class="xl-rownum">${idx + 1}</td>
+      <td style="font-weight:700; color:var(--xl-green);">第${r.roundNo}荘</td>
+      <td>${names}</td>
+      <td class="${valClass(scoreSum)}">${fmtNum(scoreSum)}</td>
+      <td class="${valClass(umaSum)}">${fmtNum(umaSum)}</td>
+      <td class="${valClass(chipSum)}">${fmtNum(chipSum)}</td>
+      <td class="${valClass(total)} val-bold">${fmtNum(total)}</td>
+      <td class="xl-action-cell">
+        <button class="xl-btn xl-btn-green" onclick="openRoundModal('${r.id}')">編集</button>
+        <button class="xl-btn xl-btn-red"   onclick="deleteRound('${r.id}')">削除</button>
+      </td>
+    </tr>`;
+  }).join('');
+
+  // 追加行
+  tbody.innerHTML += `<tr class="xl-add-row">
+    <td class="xl-rownum"></td>
+    <td colspan="7"><button class="xl-add-link" onclick="openRoundModal(null)">＋ 荘を追加...</button></td>
+  </tr>`;
+
+  updateStatus();
+}
+
+function deleteRound(id) {
+  if (!confirm('この荘を削除しますか？')) return;
+  state.rounds = state.rounds.filter(r => r.id !== id);
+  renumberRounds();
+  saveData();
+  renderRounds();
+  renderSummary();
+}
+function renumberRounds() { state.rounds.forEach((r, i) => r.roundNo = i + 1); }
+
+// ===================================================
+//  参加者管理モーダル
+// ===================================================
+function openParticipantModal() {
+  renderParticipantList();
+  document.getElementById('participant-modal').classList.add('open');
+  setTimeout(() => document.getElementById('new-participant-name').focus(), 50);
+}
+function closeParticipantModal() {
+  document.getElementById('participant-modal').classList.remove('open');
+  renderSummary();
+  updateStatus();
+}
+
+function renderParticipantList() {
+  const list = document.getElementById('participant-list');
+  if (state.participants.length === 0) {
+    list.innerHTML = '<div class="xl-empty">参加者が登録されていません</div>';
+    return;
+  }
+  list.innerHTML = state.participants.map((p, i) => `
+    <div class="xl-participant-row">
+      <div class="xl-participant-name">${i+1}. ${p.name}</div>
+      <button class="xl-btn xl-btn-red" onclick="deleteParticipant('${p.id}')">削除</button>
+    </div>`).join('');
+}
+
+function addParticipant() {
+  const input = document.getElementById('new-participant-name');
+  const errEl = document.getElementById('participant-error');
+  const name = input.value.trim();
+  if (!name) { showErr(errEl, '名前を入力してください'); return; }
+  if (state.participants.some(p => p.name === name)) {
+    showErr(errEl, `「${name}」はすでに登録されています`); return;
+  }
+  state.participants.push({ id: uid(), name });
+  input.value = '';
+  hideErr(errEl);
+  renderParticipantList();
+  saveData();
+}
+
+function deleteParticipant(id) {
+  const inUse = state.rounds.some(r => r.players.some(p => p.participantId === id));
+  if (inUse && !confirm('この参加者は荘に登録されています。\n削除しますか？')) return;
+  state.participants = state.participants.filter(p => p.id !== id);
+  renderParticipantList();
+  saveData();
+}
+
+// ===================================================
+//  荘入力モーダル
+// ===================================================
+function openRoundModal(roundId) {
+  if (state.participants.length < 4) {
+    alert('参加者を4人以上登録してから荘を追加してください');
+    openParticipantModal();
+    return;
+  }
+  editingRoundId = roundId;
+  const isNew = roundId === null;
+  const roundNo = isNew ? state.rounds.length + 1 : state.rounds.find(r => r.id === roundId).roundNo;
+  document.getElementById('round-modal-title').textContent = `第${roundNo}荘 入力`;
+  document.getElementById('round-error').classList.remove('show');
+  document.getElementById('round-total-preview').textContent = '';
+
+  let existingRound = null;
+  if (!isNew) {
+    existingRound = state.rounds.find(r => r.id === roundId);
+  } else if (state.rounds.length > 0) {
+    const prev = state.rounds[state.rounds.length - 1];
+    existingRound = {
+      players: prev.players.map(p => ({
+        participantId: p.participantId,
+        point: '', uma: '', chipCount: ''
+      }))
+    };
+  }
+  buildPlayerRows(existingRound);
+  document.getElementById('round-modal').classList.add('open');
+}
+
+function closeRoundModal() {
+  document.getElementById('round-modal').classList.remove('open');
+}
+
+function buildPlayerRows(existingRound) {
+  const tbody = document.getElementById('player-rows');
+  tbody.innerHTML = '';
+  for (let i = 0; i < 4; i++) {
+    const ep = existingRound ? existingRound.players[i] : null;
+
+    // select
+    const sel = document.createElement('select');
+    sel.className = 'xl-select-cell player-select';
+    sel.innerHTML = '<option value="">-- 選択 --</option>' +
+      state.participants.map(p =>
+        `<option value="${p.id}" ${ep && ep.participantId === p.id ? 'selected' : ''}>${p.name}</option>`
+      ).join('');
+    sel.addEventListener('change', updateTotalPreview);
+
+    const point = makeNumCell('point', ep ? ep.point : '', true);
+    const uma   = makeNumCell('uma',   ep ? ep.uma   : '', true);
+    const chip  = makeNumCell('chip',  ep ? ep.chipCount : '', false);
+    [point, uma, chip].forEach(el => el.addEventListener('input', updateTotalPreview));
+
+    const tr = document.createElement('tr');
+    const tdNum  = document.createElement('td');
+    tdNum.style.textAlign = 'center';
+    tdNum.style.color = 'var(--xl-text2)';
+    tdNum.style.fontSize = '11px';
+    tdNum.textContent = i + 1;
+    const tdSel  = wrapTd(sel);
+    const tdPt   = wrapTd(point);
+    const tdUma  = wrapTd(uma);
+    const tdChip = wrapTd(chip);
+    tr.append(tdNum, tdSel, tdPt, tdUma, tdChip);
+    tbody.appendChild(tr);
+  }
+
+  setupGridNav();
+  const first = tbody.querySelector('.point');
+  if (first) first.focus();
+  updateTotalPreview();
+}
+
+function makeNumCell(cls, val, arrowNav) {
+  const inp = document.createElement('input');
+  inp.type = 'number';
+  inp.className = 'xl-input-cell ' + cls;
+  inp.dataset.nav = arrowNav ? '1' : '0';
+  inp.value = val === '' ? '' : val;
+  inp.placeholder = '0';
+  inp.addEventListener('focus', () => inp.select());
+  return inp;
+}
+
+function wrapTd(el) {
+  const td = document.createElement('td');
+  td.style.padding = '0';
+  td.appendChild(el);
+  return td;
+}
+
+function setupGridNav() {
+  const getGrid = () => {
+    const rows = document.querySelectorAll('#player-rows tr');
+    return Array.from(rows).map(row => [
+      row.querySelector('.point'),
+      row.querySelector('.uma')
+    ]);
+  };
+  document.querySelectorAll('#player-rows input[data-nav="1"]').forEach(inp => {
+    inp.addEventListener('keydown', e => {
+      const grid = getGrid();
+      let cr = -1, cc = -1;
+      grid.forEach((cols, r) => cols.forEach((cell, c) => {
+        if (cell === inp) { cr = r; cc = c; }
+      }));
+      if (cr === -1) return;
+      let nr = cr, nc = cc;
+      if      (e.key === 'ArrowDown' || e.key === 'Enter') { e.preventDefault(); nr = (cr + 1) % grid.length; }
+      else if (e.key === 'ArrowUp')   { e.preventDefault(); nr = (cr - 1 + grid.length) % grid.length; }
+      else if (e.key === 'ArrowRight') {
+        e.preventDefault();
+        nc = cc + 1;
+        if (nc >= grid[cr].length) { nc = 0; nr = (cr + 1) % grid.length; }
+      }
+      else if (e.key === 'ArrowLeft') {
+        e.preventDefault();
+        nc = cc - 1;
+        if (nc < 0) { nc = grid[cr].length - 1; nr = (cr - 1 + grid.length) % grid.length; }
+      } else return;
+      const t = grid[nr][nc];
+      if (t) t.focus();
+    });
+  });
+}
+
+function updateTotalPreview() {
+  const rows = document.querySelectorAll('#player-rows tr');
+  let sum = 0;
+  rows.forEach(row => {
+    const p = parseFloat(row.querySelector('.point')?.value) || 0;
+    const u = parseFloat(row.querySelector('.uma')?.value)   || 0;
+    const c = parseFloat(row.querySelector('.chip')?.value)  || 0;
+    sum += p + u + c * 5;
+  });
+  const el = document.getElementById('round-total-preview');
+  const cls = sum === 0 ? 'val-zero' : (sum > 0 ? 'val-plus' : 'val-minus');
+  el.innerHTML = `合計プレビュー: <span class="${cls}" style="font-weight:700;">${fmtNum(sum)}</span>`;
+}
+
+function saveRound() {
+  const errEl = document.getElementById('round-error');
+  hideErr(errEl);
+  const rows = document.querySelectorAll('#player-rows tr');
+  const players = [], usedIds = [];
+
+  for (let i = 0; i < rows.length; i++) {
+    const row = rows[i];
+    const pid = row.querySelector('.player-select')?.value;
+    const pt  = row.querySelector('.point')?.value;
+    const um  = row.querySelector('.uma')?.value;
+    const ch  = row.querySelector('.chip')?.value;
+    if (!pid) { showErr(errEl, `プレイヤー${i+1}を選択してください`); return; }
+    if (usedIds.includes(pid)) { showErr(errEl, '同じプレイヤーが重複しています'); return; }
+    if (pt === '' || um === '') { showErr(errEl, `プレイヤー${i+1}の点数・馬を入力してください`); return; }
+    usedIds.push(pid);
+    players.push({ participantId: pid, point: parseFloat(pt), uma: parseFloat(um), chipCount: ch === '' ? 0 : parseFloat(ch) });
+  }
+
+  const total = players.reduce((s, p) => s + p.point + p.uma + p.chipCount * 5, 0);
+  if (total !== 0) { showErr(errEl, `⚠ 合計が0ではありません　現在: ${fmtNum(total)}`); return; }
+
+  if (editingRoundId === null) {
+    state.rounds.push({ id: uid(), roundNo: state.rounds.length + 1, players });
+  } else {
+    const idx = state.rounds.findIndex(r => r.id === editingRoundId);
+    state.rounds[idx].players = players;
+  }
+  closeRoundModal();
+  saveData();
+  renderRounds();
+  renderSummary();
+}
+
+// ===================================================
+//  集計
+// ===================================================
+function renderSummary() {
+  const sortKey = document.getElementById('sort-select').value;
+  const stats = {};
+  state.participants.forEach(p => {
+    stats[p.id] = { name: p.name, count: 0, scoreTotal: 0, umaTotal: 0, chipTotal: 0, grandTotal: 0 };
+  });
+  state.rounds.forEach(r => {
+    r.players.forEach(p => {
+      if (!stats[p.participantId]) return;
+      const chip = p.chipCount * 5;
+      stats[p.participantId].count++;
+      stats[p.participantId].scoreTotal += p.point;
+      stats[p.participantId].umaTotal   += p.uma;
+      stats[p.participantId].chipTotal  += chip;
+      stats[p.participantId].grandTotal += p.point + p.uma + chip;
+    });
+  });
+
+  let rows = Object.values(stats);
+  rows.sort((a, b) => sortKey === 'name' ? a.name.localeCompare(b.name, 'ja') : b[sortKey] - a[sortKey]);
+
+  const tbody = document.getElementById('summary-tbody');
+  if (rows.length === 0) {
+    tbody.innerHTML = '<tr><td></td><td colspan="6" style="text-align:center;color:var(--xl-text2);font-style:italic;">参加者を登録してください</td></tr>';
+    return;
+  }
+  tbody.innerHTML = rows.map((r, i) => `
+    <tr>
+      <td style="text-align:center;color:var(--xl-text2);font-size:11px;border:1px solid var(--xl-border);background:var(--xl-head);">${i+1}</td>
+      <td>${r.name}</td>
+      <td style="text-align:center;">${r.count}</td>
+      <td class="${valClass(r.scoreTotal)}">${fmtNum(r.scoreTotal)}</td>
+      <td class="${valClass(r.umaTotal)}">${fmtNum(r.umaTotal)}</td>
+      <td class="${valClass(r.chipTotal)}">${fmtNum(r.chipTotal)}</td>
+      <td class="${valClass(r.grandTotal)}" style="font-weight:800;">${fmtNum(r.grandTotal)}</td>
+    </tr>`).join('');
+}
+
+// ===================================================
+//  PDF出力
+// ===================================================
+function exportPDF() {
+  const w = window.open('', '_blank');
+  const dateStr = fmtDate(state.date);
+  let html = `<!DOCTYPE html><html lang="ja"><head><meta charset="UTF-8">
+<title>麻雀収支結果 ${dateStr}</title>
+<style>
+  body { font-family: 'Meiryo', Arial, sans-serif; font-size: 13px; color: #111; margin: 20px; }
+  h1 { font-size: 20px; margin-bottom: 4px; color: #217346; }
+  h3 { font-size: 14px; margin: 14px 0 4px; color: #217346; border-left: 4px solid #217346; padding-left: 8px; }
+  h2 { font-size: 16px; margin: 20px 0 6px; background: #217346; color: #fff; padding: 4px 10px; }
+  table { border-collapse: collapse; width: 100%; margin-bottom: 12px; }
+  th, td { border: 1px solid #bbb; padding: 5px 10px; text-align: right; font-size: 13px; }
+  th { background: #e2efda; font-weight: bold; color: #217346; }
+  td:first-child, th:first-child { text-align: left; }
+  .plus { color: #1a6b2a; font-weight: 700; } .minus { color: #c00000; font-weight: 700; }
+  @media print { button { display: none; } }
+</style></head><body>
+<h1>🀄 麻雀収支結果</h1><p>${dateStr}</p>
+<button onclick="window.print()" style="margin:8px 0;padding:6px 14px;font-size:13px;cursor:pointer;background:#217346;color:#fff;border:none;border-radius:3px;">🖨 印刷</button>`;
+
+  html += '<h2>荘別結果</h2>';
+  state.rounds.forEach(r => {
+    html += `<h3>第${r.roundNo}荘</h3><table><thead><tr><th>名前</th><th>点数</th><th>馬</th><th>チップ枚数</th><th>チップ点</th><th>合計</th></tr></thead><tbody>`;
+    r.players.forEach(p => {
+      const pt = state.participants.find(x => x.id === p.participantId);
+      const cp = p.chipCount * 5;
+      const tot = p.point + p.uma + cp;
+      html += `<tr><td>${pt ? pt.name : '?'}</td><td>${p.point}</td><td>${p.uma}</td><td>${p.chipCount}</td><td>${cp}</td><td class="${tot>0?'plus':tot<0?'minus':''}">${fmtNum(tot)}</td></tr>`;
+    });
+    html += '</tbody></table>';
+  });
+
+  const stats = {};
+  state.participants.forEach(p => { stats[p.id] = { name: p.name, count: 0, scoreTotal: 0, umaTotal: 0, chipTotal: 0, grandTotal: 0 }; });
+  state.rounds.forEach(r => {
+    r.players.forEach(p => {
+      if (!stats[p.participantId]) return;
+      const chip = p.chipCount * 5;
+      stats[p.participantId].count++;
+      stats[p.participantId].scoreTotal += p.point;
+      stats[p.participantId].umaTotal   += p.uma;
+      stats[p.participantId].chipTotal  += chip;
+      stats[p.participantId].grandTotal += p.point + p.uma + chip;
+    });
+  });
+  const rows = Object.values(stats).sort((a,b) => b.grandTotal - a.grandTotal);
+  html += `<h2>集計結果</h2><table><thead><tr><th>名前</th><th>参加数</th><th>点数</th><th>馬</th><th>チップ点</th><th>総合計</th></tr></thead><tbody>`;
+  rows.forEach(r => {
+    html += `<tr><td>${r.name}</td><td style="text-align:center;">${r.count}</td><td>${fmtNum(r.scoreTotal)}</td><td>${fmtNum(r.umaTotal)}</td><td>${fmtNum(r.chipTotal)}</td><td class="${r.grandTotal>0?'plus':r.grandTotal<0?'minus':''}"><strong>${fmtNum(r.grandTotal)}</strong></td></tr>`;
+  });
+  html += '</tbody></table></body></html>';
+  w.document.write(html); w.document.close();
+}
+
+// ===================================================
+//  エラー表示
+// ===================================================
+function showErr(el, msg) { el.textContent = msg; el.classList.add('show'); }
+function hideErr(el) { el.classList.remove('show'); }
+
+// モーダル外クリック
+document.getElementById('participant-modal').addEventListener('click', function(e) { if (e.target === this) closeParticipantModal(); });
+document.getElementById('round-modal').addEventListener('click', function(e) { if (e.target === this) closeRoundModal(); });
+
+init();
+</script>
+</body>
+</html>
