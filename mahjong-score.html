@@ -2,14 +2,13 @@
 <html lang="ja">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <title>麻雀収支管理</title>
 <style>
 /* ===== リセット ===== */
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
 :root {
-  /* Excel配色 */
   --xl-green:    #217346;
   --xl-green2:   #185c38;
   --xl-ribbon:   #f3f2f1;
@@ -20,7 +19,6 @@
   --xl-head:     #e9ebee;
   --xl-head2:    #d6d9de;
   --xl-select:   #cce8ff;
-  --xl-select2:  #99d1ff;
   --xl-text:     #212121;
   --xl-text2:    #595959;
   --xl-plus:     #1a6b2a;
@@ -29,42 +27,40 @@
   --xl-minus-bg: #fce4d6;
   --xl-row-alt:  #f7f8fa;
   --xl-shadow:   rgba(0,0,0,.12);
-  --font:        'Segoe UI', 'Meiryo UI', 'Meiryo', Arial, sans-serif;
-  --fs-xl: 20px;
-  --fs-lg: 15px;
-  --fs-md: 13px;
-  --fs-sm: 12px;
+  --font: -apple-system, 'Helvetica Neue', 'Segoe UI', 'Meiryo UI', Arial, sans-serif;
 }
 
-body {
+html, body {
   font-family: var(--font);
-  font-size: var(--fs-md);
+  font-size: 16px;
   background: #e8e6e3;
   color: var(--xl-text);
   min-height: 100vh;
-  padding-bottom: 190px;
+  -webkit-text-size-adjust: 100%;
+  /* iPhoneのキーボード表示時にズームしない */
 }
 
 /* ===== タイトルバー ===== */
 #titlebar {
   background: var(--xl-green);
   color: #fff;
-  padding: 6px 16px 5px;
+  padding: 10px 14px 8px;
   display: flex;
   align-items: center;
-  gap: 10px;
-  font-size: var(--fs-sm);
-  letter-spacing: .5px;
+  gap: 8px;
+  position: sticky;
+  top: 0;
+  z-index: 100;
 }
 #titlebar-name {
-  font-size: 14px;
-  font-weight: 600;
+  font-size: 16px;
+  font-weight: 700;
   flex: 1;
   text-align: center;
 }
-#titlebar-date { font-size: var(--fs-sm); opacity: .85; }
+#titlebar-date { font-size: 12px; opacity: .85; white-space: nowrap; }
 
-/* ===== リボン ===== */
+/* ===== リボン（PC）/ ツールバー（スマホ） ===== */
 #ribbon {
   background: var(--xl-ribbon);
   border-bottom: 2px solid var(--xl-green);
@@ -73,6 +69,7 @@ body {
   align-items: stretch;
   gap: 2px;
   min-height: 56px;
+  overflow-x: auto;
 }
 .ribbon-group {
   display: flex;
@@ -82,25 +79,20 @@ body {
   padding: 4px 6px 2px;
   border-right: 1px solid var(--xl-border);
   gap: 3px;
+  flex-shrink: 0;
 }
 .ribbon-group:last-child { border-right: none; }
-.ribbon-group-label {
-  font-size: 10px;
-  color: var(--xl-text2);
-  margin-top: 2px;
-  text-align: center;
-}
+.ribbon-group-label { font-size: 10px; color: var(--xl-text2); margin-top: 2px; }
 .ribbon-btns { display: flex; gap: 3px; }
 
-/* ===== リボンボタン ===== */
 .rb {
   font-family: var(--font);
-  font-size: var(--fs-sm);
+  font-size: 12px;
   font-weight: 600;
   cursor: pointer;
   border: 1px solid transparent;
   border-radius: 3px;
-  padding: 5px 10px;
+  padding: 6px 10px;
   background: transparent;
   color: var(--xl-text);
   display: flex;
@@ -108,58 +100,65 @@ body {
   align-items: center;
   gap: 2px;
   min-width: 52px;
-  transition: background .1s, border-color .1s;
+  transition: background .1s;
   white-space: nowrap;
+  -webkit-tap-highlight-color: transparent;
 }
-.rb:hover { background: var(--xl-ribbon2); border-color: var(--xl-border2); }
 .rb:active { background: #d0cdc9; }
-.rb-icon { font-size: 20px; line-height: 1; }
+.rb-icon { font-size: 22px; line-height: 1; }
 .rb-green { color: var(--xl-green); }
-.rb-red   { color: #c00000; }
 .rb-blue  { color: #1f4e79; }
 .rb-org   { color: #c55a11; }
 
-/* ===== 数式バー風 ===== */
+/* スマホ：リボンをコンパクトに */
+@media (max-width: 480px) {
+  #ribbon { min-height: 48px; padding: 0 4px; }
+  .rb { min-width: 44px; padding: 4px 8px; font-size: 11px; }
+  .rb-icon { font-size: 20px; }
+  .ribbon-group-label { display: none; }
+}
+
+/* ===== 数式バー ===== */
 #formula-bar {
   background: var(--xl-cell);
   border-bottom: 1px solid var(--xl-border);
-  padding: 4px 12px;
+  padding: 4px 10px;
   display: flex;
   align-items: center;
   gap: 8px;
-  font-size: var(--fs-sm);
+  font-size: 12px;
   color: var(--xl-text2);
-  min-height: 26px;
+  min-height: 24px;
 }
 #formula-bar-label {
   background: var(--xl-head);
   border: 1px solid var(--xl-border2);
   border-radius: 2px;
-  padding: 2px 8px;
-  font-size: var(--fs-sm);
-  min-width: 80px;
-  text-align: center;
+  padding: 1px 8px;
+  font-size: 11px;
+  white-space: nowrap;
 }
-#formula-bar-sep { color: var(--xl-border2); font-size: 16px; }
-#formula-bar-value { color: var(--xl-text); }
+#formula-bar-sep { color: var(--xl-border2); }
+#formula-bar-value { color: var(--xl-text); font-size: 12px; }
 
-/* ===== メインレイアウト ===== */
+@media (max-width: 480px) {
+  #formula-bar { display: none; }
+}
+
+/* ===== メイン ===== */
 #main-wrap {
   max-width: 1100px;
   margin: 0 auto;
-  padding: 10px 12px 0;
+  padding: 8px 8px 0;
+  /* 集計フッター分の余白 */
+  padding-bottom: 4px;
 }
 
-/* ===== シートタブ風 ===== */
-#sheet-tabs {
-  display: flex;
-  align-items: flex-end;
-  gap: 0;
-  margin-bottom: 0;
-}
+/* ===== シートタブ ===== */
+#sheet-tabs { display: flex; align-items: flex-end; }
 .sheet-tab {
-  font-size: var(--fs-sm);
-  padding: 5px 18px;
+  font-size: 12px;
+  padding: 5px 14px;
   background: var(--xl-ribbon2);
   border: 1px solid var(--xl-border);
   border-bottom: none;
@@ -176,6 +175,9 @@ body {
   margin-bottom: -1px;
   z-index: 1;
 }
+@media (max-width: 480px) {
+  #sheet-tabs { display: none; }
+}
 
 /* ===== スプレッドシート本体 ===== */
 .xl-sheet {
@@ -184,36 +186,40 @@ body {
   border-radius: 0 3px 3px 3px;
   overflow: hidden;
   box-shadow: 0 2px 8px var(--xl-shadow);
-  margin-bottom: 12px;
+  margin-bottom: 8px;
+  overflow-x: auto;
+}
+@media (max-width: 480px) {
+  .xl-sheet { border-radius: 4px; }
 }
 
 /* ===== テーブル共通 ===== */
 .xl-table {
   width: 100%;
   border-collapse: collapse;
-  font-size: var(--fs-md);
+  font-size: 13px;
+  min-width: 340px;
 }
 .xl-table th {
   background: var(--xl-head);
   border: 1px solid var(--xl-border);
-  padding: 5px 10px;
+  padding: 6px 8px;
   text-align: center;
   font-weight: 700;
-  font-size: var(--fs-sm);
+  font-size: 12px;
   color: var(--xl-text2);
   white-space: nowrap;
   user-select: none;
 }
 .xl-table td {
   border: 1px solid var(--xl-border);
-  padding: 5px 10px;
+  padding: 8px 8px;
   text-align: right;
-  font-size: var(--fs-md);
+  font-size: 14px;
   background: var(--xl-cell);
 }
 .xl-table td:first-child { text-align: left; }
 .xl-table tr:nth-child(even) td { background: var(--xl-row-alt); }
-.xl-table tr:hover td { background: var(--xl-select) !important; }
 
 /* 行番号列 */
 .xl-rownum {
@@ -221,54 +227,63 @@ body {
   color: var(--xl-text2);
   text-align: center !important;
   font-size: 11px;
-  width: 32px;
-  min-width: 32px;
+  width: 28px;
+  min-width: 28px;
   border-right: 2px solid var(--xl-border2) !important;
+  padding: 4px !important;
+}
+
+/* スマホ：行番号非表示 */
+@media (max-width: 480px) {
+  .xl-rownum { display: none; }
+  .xl-table th:first-child { display: none; }
 }
 
 /* ===== 値の色 ===== */
-.val-plus  { color: var(--xl-plus);  background: var(--xl-plus-bg) !important; font-weight: 700; }
+.val-plus  { color: var(--xl-plus);  background: var(--xl-plus-bg)  !important; font-weight: 700; }
 .val-minus { color: var(--xl-minus); background: var(--xl-minus-bg) !important; font-weight: 700; }
 .val-zero  { color: var(--xl-text2); }
 .val-bold  { font-weight: 700; }
 
-/* ===== 荘一覧テーブル操作列 ===== */
+/* ===== 荘操作ボタン ===== */
 .xl-action-cell { text-align: center !important; white-space: nowrap; }
 .xl-btn {
   font-family: var(--font);
-  font-size: 11px;
+  font-size: 12px;
   font-weight: 600;
-  padding: 2px 8px;
+  padding: 4px 10px;
   border: 1px solid var(--xl-border2);
-  border-radius: 2px;
+  border-radius: 3px;
   cursor: pointer;
   background: var(--xl-ribbon);
   color: var(--xl-text);
   margin: 0 2px;
-  transition: background .1s;
+  -webkit-tap-highlight-color: transparent;
 }
-.xl-btn:hover { background: var(--xl-head2); }
-.xl-btn-red { border-color: #c00000; color: #c00000; }
-.xl-btn-red:hover { background: #fce4d6; }
+.xl-btn:active { background: var(--xl-head2); }
+.xl-btn-red   { border-color: #c00000; color: #c00000; }
+.xl-btn-red:active { background: #fce4d6; }
 .xl-btn-green { border-color: var(--xl-green); color: var(--xl-green); }
-.xl-btn-green:hover { background: #e2efda; }
+.xl-btn-green:active { background: #e2efda; }
 
-/* ===== 追加行 ===== */
-.xl-add-row td {
-  background: #f0f7f0 !important;
-  border-top: 2px dashed #9dc3a0 !important;
+/* スマホ：ボタン大きく */
+@media (max-width: 480px) {
+  .xl-btn { padding: 6px 12px; font-size: 13px; }
 }
-.xl-add-row:hover td { background: #e2efda !important; }
+
+/* ===== 荘追加リンク行 ===== */
+.xl-add-row td { background: #f0f7f0 !important; border-top: 2px dashed #9dc3a0 !important; }
 .xl-add-link {
   color: var(--xl-green);
   font-weight: 600;
   cursor: pointer;
   text-decoration: underline;
-  font-size: var(--fs-md);
+  font-size: 14px;
   background: none;
   border: none;
   font-family: var(--font);
-  padding: 0;
+  padding: 4px 0;
+  -webkit-tap-highlight-color: transparent;
 }
 
 /* ===== 集計フッター ===== */
@@ -278,137 +293,173 @@ body {
   background: var(--xl-ribbon);
   border-top: 2px solid var(--xl-green);
   z-index: 90;
-  padding: 6px 12px 8px;
+  padding: 6px 10px 8px;
   box-shadow: 0 -2px 8px var(--xl-shadow);
 }
 .summary-topbar {
   display: flex;
   align-items: center;
-  gap: 10px;
-  margin-bottom: 5px;
+  gap: 8px;
+  margin-bottom: 4px;
 }
 .summary-label {
-  font-size: var(--fs-sm);
+  font-size: 13px;
   font-weight: 700;
   color: var(--xl-green);
   flex: 1;
 }
-.summary-sort-wrap { display: flex; align-items: center; gap: 5px; font-size: var(--fs-sm); }
+.summary-sort-wrap { display: flex; align-items: center; gap: 4px; font-size: 12px; }
 .summary-sort-wrap label { color: var(--xl-text2); }
 select.xl-select {
   font-family: var(--font);
-  font-size: var(--fs-sm);
+  font-size: 14px; /* ズーム防止のため16px未満にしない→実際は14でもSafariではOK、selectはズームしにくい */
   background: var(--xl-cell);
   border: 1px solid var(--xl-border2);
   border-radius: 2px;
   padding: 3px 6px;
   color: var(--xl-text);
 }
-.summary-table-wrap { overflow-x: auto; }
+.summary-table-wrap { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+
 .xl-summary-table {
   width: 100%;
   border-collapse: collapse;
-  font-size: var(--fs-sm);
-  min-width: 520px;
+  font-size: 13px;
+  min-width: 320px;
 }
 .xl-summary-table th {
   background: var(--xl-green);
   color: #fff;
-  padding: 4px 10px;
+  padding: 4px 8px;
   text-align: right;
-  font-size: var(--fs-sm);
+  font-size: 12px;
   border: 1px solid var(--xl-green2);
   white-space: nowrap;
 }
-.xl-summary-table th:first-child,
+.xl-summary-table th:nth-child(1),
 .xl-summary-table th:nth-child(2) { text-align: left; }
 .xl-summary-table td {
-  padding: 4px 10px;
+  padding: 4px 8px;
   text-align: right;
   border: 1px solid var(--xl-border);
   background: var(--xl-cell);
-  font-size: var(--fs-sm);
+  font-size: 13px;
 }
-.xl-summary-table td:first-child { text-align: left; font-weight: 700; }
-.xl-summary-table td:nth-child(2) { text-align: center; }
+.xl-summary-table td:first-child { text-align: center; font-size: 11px; color: var(--xl-text2); background: var(--xl-head); border-right: 2px solid var(--xl-border2); }
+.xl-summary-table td:nth-child(2) { text-align: left; font-weight: 700; }
+.xl-summary-table td:nth-child(3) { text-align: center; }
 .xl-summary-table tr:nth-child(even) td { background: var(--xl-row-alt); }
+.xl-summary-table tr:nth-child(even) td:first-child { background: var(--xl-head); }
 .xl-summary-table .val-plus  { color: var(--xl-plus);  background: var(--xl-plus-bg)  !important; font-weight: 700; }
 .xl-summary-table .val-minus { color: var(--xl-minus); background: var(--xl-minus-bg) !important; font-weight: 700; }
+
+/* スマホ：集計の行番号列非表示 */
+@media (max-width: 480px) {
+  .xl-summary-table td:first-child,
+  .xl-summary-table th:first-child { display: none; }
+  .summary-label { font-size: 12px; }
+}
 
 /* ===== モーダル ===== */
 .modal-overlay {
   display: none;
   position: fixed;
   inset: 0;
-  background: rgba(0,0,0,.45);
+  background: rgba(0,0,0,.5);
   z-index: 300;
-  align-items: center;
+  align-items: flex-end; /* スマホは下から */
   justify-content: center;
-  padding: 16px;
+  padding: 0;
 }
 .modal-overlay.open { display: flex; }
+
+/* PCはセンター表示 */
+@media (min-width: 481px) {
+  .modal-overlay { align-items: center; padding: 16px; }
+}
+
 .xl-modal {
   background: var(--xl-cell);
   border: 1px solid var(--xl-border2);
-  border-radius: 4px;
-  box-shadow: 0 8px 32px rgba(0,0,0,.28);
+  border-radius: 12px 12px 0 0;
+  box-shadow: 0 -4px 24px rgba(0,0,0,.2);
   width: 100%;
-  max-width: 620px;
-  max-height: 90vh;
+  max-width: 100%;
+  max-height: 92vh;
   overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
 }
+@media (min-width: 481px) {
+  .xl-modal {
+    border-radius: 6px;
+    max-width: 580px;
+    box-shadow: 0 8px 32px rgba(0,0,0,.28);
+  }
+}
+
 .xl-modal-titlebar {
   background: var(--xl-green);
   color: #fff;
-  padding: 8px 14px;
-  font-size: var(--fs-lg);
+  padding: 12px 14px;
+  font-size: 16px;
   font-weight: 700;
   display: flex;
   align-items: center;
   justify-content: space-between;
+  border-radius: 12px 12px 0 0;
+  position: sticky;
+  top: 0;
+  z-index: 1;
 }
+@media (min-width: 481px) {
+  .xl-modal-titlebar { border-radius: 5px 5px 0 0; }
+}
+
 .xl-modal-close {
   background: none;
   border: none;
   color: #fff;
-  font-size: 18px;
+  font-size: 20px;
   cursor: pointer;
   padding: 0 4px;
   line-height: 1;
+  -webkit-tap-highlight-color: transparent;
 }
-.xl-modal-close:hover { background: rgba(255,255,255,.2); border-radius: 2px; }
-.xl-modal-body { padding: 16px; }
+.xl-modal-body { padding: 14px; }
 .xl-modal-footer {
   border-top: 1px solid var(--xl-border);
-  padding: 10px 16px;
+  padding: 10px 14px;
   display: flex;
   justify-content: flex-end;
   gap: 8px;
   background: var(--xl-ribbon);
+  position: sticky;
+  bottom: 0;
 }
 
-/* ===== モーダル内フォーム ===== */
+/* ===== ダイアログボタン ===== */
 .xl-dialog-btn {
   font-family: var(--font);
-  font-size: var(--fs-md);
+  font-size: 15px;
   font-weight: 600;
-  padding: 6px 20px;
+  padding: 10px 20px;
   border: 1px solid var(--xl-border2);
-  border-radius: 3px;
+  border-radius: 4px;
   cursor: pointer;
   background: var(--xl-ribbon);
   color: var(--xl-text);
-  transition: background .1s;
+  -webkit-tap-highlight-color: transparent;
+  min-height: 44px; /* タップしやすいサイズ */
 }
-.xl-dialog-btn:hover { background: var(--xl-head2); }
+.xl-dialog-btn:active { background: var(--xl-head2); }
 .xl-dialog-btn-primary {
   background: var(--xl-green);
   color: #fff;
   border-color: var(--xl-green2);
 }
-.xl-dialog-btn-primary:hover { background: var(--xl-green2); }
+.xl-dialog-btn-primary:active { background: var(--xl-green2); }
 
-/* 荘入力グリッド */
+/* ===== 荘入力テーブル ===== */
 .round-input-table {
   width: 100%;
   border-collapse: collapse;
@@ -417,28 +468,31 @@ select.xl-select {
 .round-input-table th {
   background: var(--xl-green);
   color: #fff;
-  padding: 5px 8px;
+  padding: 6px 6px;
   text-align: center;
-  font-size: var(--fs-sm);
+  font-size: 13px;
   border: 1px solid var(--xl-green2);
 }
 .round-input-table td {
   border: 1px solid var(--xl-border);
-  padding: 2px 3px;
+  padding: 0;
   background: var(--xl-cell);
 }
 .round-input-table tr:nth-child(even) td { background: var(--xl-row-alt); }
 
+/* 入力セル：フォントサイズ16px以上でiPhoneのズームを防ぐ */
 .xl-input-cell {
   width: 100%;
   font-family: var(--font);
-  font-size: var(--fs-lg);
+  font-size: 16px; /* ズーム防止の重要設定 */
   border: none;
   outline: none;
-  padding: 5px 6px;
+  padding: 10px 8px;
   background: transparent;
   color: var(--xl-text);
   text-align: right;
+  -webkit-appearance: none;
+  min-height: 44px;
 }
 .xl-input-cell:focus {
   background: var(--xl-select);
@@ -448,12 +502,14 @@ select.xl-select {
 .xl-select-cell {
   width: 100%;
   font-family: var(--font);
-  font-size: var(--fs-md);
+  font-size: 16px; /* ズーム防止 */
   border: none;
   outline: none;
-  padding: 5px 4px;
+  padding: 10px 6px;
   background: transparent;
   color: var(--xl-text);
+  -webkit-appearance: none;
+  min-height: 44px;
 }
 .xl-select-cell:focus {
   background: var(--xl-select);
@@ -461,27 +517,37 @@ select.xl-select {
   outline-offset: -2px;
 }
 
-/* ヒント行 */
+/* スマホ：荘入力の番号列を非表示 */
+@media (max-width: 480px) {
+  .round-input-table th:first-child,
+  .round-input-table td:first-child { display: none; }
+}
+
+/* ===== ヒント ===== */
 .xl-hint {
-  font-size: 11px;
+  font-size: 12px;
   color: var(--xl-text2);
   background: #fff8e1;
   border: 1px solid #ffe082;
-  border-radius: 2px;
-  padding: 5px 10px;
+  border-radius: 3px;
+  padding: 6px 10px;
   margin-top: 6px;
+  line-height: 1.5;
+}
+@media (max-width: 480px) {
+  .xl-hint { display: none; } /* スマホではキーボードナビ不要なので非表示 */
 }
 
-/* エラー */
+/* ===== エラー ===== */
 .xl-error {
   display: none;
   background: #fce4d6;
   border: 1px solid #c00000;
-  border-radius: 2px;
+  border-radius: 3px;
   color: #c00000;
-  font-size: var(--fs-sm);
+  font-size: 13px;
   font-weight: 600;
-  padding: 6px 10px;
+  padding: 8px 10px;
   margin-top: 8px;
 }
 .xl-error.show { display: block; }
@@ -489,70 +555,83 @@ select.xl-select {
 /* 合計プレビュー */
 #round-total-preview {
   text-align: right;
-  font-size: var(--fs-sm);
+  font-size: 13px;
   color: var(--xl-text2);
-  margin-top: 4px;
-  font-style: italic;
+  margin-top: 6px;
+  padding: 4px 2px;
 }
 
-/* 参加者管理 */
+/* ===== 参加者管理 ===== */
 .xl-participant-row {
   display: flex;
   align-items: center;
   border: 1px solid var(--xl-border);
   margin-bottom: 3px;
-  border-radius: 2px;
+  border-radius: 3px;
   overflow: hidden;
+  min-height: 44px;
 }
 .xl-participant-name {
   flex: 1;
-  padding: 6px 10px;
-  font-size: var(--fs-md);
+  padding: 10px 12px;
+  font-size: 15px;
   background: var(--xl-cell);
 }
 .xl-participant-row:nth-child(even) .xl-participant-name { background: var(--xl-row-alt); }
-.xl-add-row-form { display: flex; gap: 6px; margin-top: 8px; }
+.xl-add-row-form { display: flex; gap: 8px; margin-top: 10px; }
 .xl-text-input {
   flex: 1;
   font-family: var(--font);
-  font-size: var(--fs-md);
+  font-size: 16px; /* ズーム防止 */
   border: 1px solid var(--xl-border2);
-  border-radius: 2px;
-  padding: 6px 8px;
+  border-radius: 3px;
+  padding: 10px 10px;
   outline: none;
   color: var(--xl-text);
+  min-height: 44px;
 }
-.xl-text-input:focus { border-color: #1a73e8; outline: 2px solid #cce8ff; outline-offset: -1px; }
+.xl-text-input:focus { border-color: #1a73e8; }
 
 /* ===== ステータスバー ===== */
 #statusbar {
-  position: fixed;
-  bottom: 0; left: 0; right: 0;
-  height: 22px;
   background: var(--xl-green);
   color: rgba(255,255,255,.85);
   font-size: 11px;
   display: flex;
   align-items: center;
-  padding: 0 12px;
-  gap: 16px;
-  z-index: 80;
+  padding: 3px 10px;
+  gap: 14px;
 }
-#statusbar span { opacity: .8; }
+#statusbar span { opacity: .85; }
+
+/* スマホ：ステータスバー非表示 */
+@media (max-width: 480px) {
+  #statusbar { display: none; }
+}
 
 /* ===== 空状態 ===== */
 .xl-empty {
   text-align: center;
   color: var(--xl-text2);
-  font-size: var(--fs-md);
-  padding: 30px;
+  font-size: 14px;
+  padding: 30px 16px;
   font-style: italic;
 }
 
+/* ===== 集計フッターの高さに合わせてbody padding-bottom調整 ===== */
+/* JSで動的に設定するため基本値のみ */
+body { padding-bottom: 180px; }
+@media (max-width: 480px) { body { padding-bottom: 160px; } }
+
 /* スクロールバー */
-::-webkit-scrollbar { width: 8px; height: 8px; }
+::-webkit-scrollbar { width: 6px; height: 6px; }
 ::-webkit-scrollbar-track { background: var(--xl-ribbon); }
 ::-webkit-scrollbar-thumb { background: var(--xl-border2); border-radius: 2px; }
+
+/* iOSのsafe area対応 */
+@supports (padding-bottom: env(safe-area-inset-bottom)) {
+  #summary-area { padding-bottom: calc(8px + env(safe-area-inset-bottom)); }
+}
 </style>
 </head>
 <body>
@@ -580,7 +659,7 @@ select.xl-select {
         <span class="rb-icon">👥</span>参加者
       </button>
       <button class="rb" onclick="openRoundModal(null)">
-        <span class="rb-icon rb-green">＋</span>荘追加
+        <span class="rb-icon rb-green">➕</span>荘追加
       </button>
     </div>
     <div class="ribbon-group-label">データ入力</div>
@@ -588,14 +667,14 @@ select.xl-select {
   <div class="ribbon-group">
     <div class="ribbon-btns">
       <button class="rb" onclick="exportPDF()">
-        <span class="rb-icon rb-org">📄</span>PDF出力
+        <span class="rb-icon rb-org">📄</span>PDF
       </button>
     </div>
     <div class="ribbon-group-label">出力</div>
   </div>
 </div>
 
-<!-- 数式バー -->
+<!-- 数式バー（PC only） -->
 <div id="formula-bar">
   <div id="formula-bar-label">麻雀収支</div>
   <span id="formula-bar-sep">│</span>
@@ -604,25 +683,22 @@ select.xl-select {
 
 <!-- メイン -->
 <div id="main-wrap">
-  <!-- シートタブ -->
   <div id="sheet-tabs">
     <div class="sheet-tab active">📋 荘一覧</div>
-    <div class="sheet-tab" style="opacity:.5; cursor:default;">📊 集計</div>
+    <div class="sheet-tab" style="opacity:.5;cursor:default;">📊 集計</div>
   </div>
-
-  <!-- 荘一覧シート -->
   <div class="xl-sheet">
     <table class="xl-table" id="rounds-table">
       <thead>
         <tr>
-          <th style="width:32px"></th>
-          <th style="width:70px">荘</th>
-          <th>プレイヤー</th>
-          <th style="width:90px">点数計</th>
-          <th style="width:90px">馬計</th>
-          <th style="width:90px">チップ計</th>
-          <th style="width:90px">合計</th>
-          <th style="width:110px">操作</th>
+          <th class="xl-rownum"></th>
+          <th style="width:64px">荘</th>
+          <th style="text-align:left;">プレイヤー</th>
+          <th style="width:72px">点数計</th>
+          <th style="width:64px">馬計</th>
+          <th style="width:72px">チップ計</th>
+          <th style="width:72px">合計</th>
+          <th style="width:96px">操作</th>
         </tr>
       </thead>
       <tbody id="rounds-tbody"></tbody>
@@ -630,10 +706,17 @@ select.xl-select {
   </div>
 </div>
 
+<!-- ステータスバー -->
+<div id="statusbar">
+  <span id="status-rounds">荘数: 0</span>
+  <span id="status-participants">参加者: 0人</span>
+  <span style="margin-left:auto;">麻雀収支管理 v1.0</span>
+</div>
+
 <!-- 集計フッター -->
 <div id="summary-area">
   <div class="summary-topbar">
-    <span class="summary-label">📊 集計結果</span>
+    <span class="summary-label">📊 集計</span>
     <div class="summary-sort-wrap">
       <label>並び順：</label>
       <select class="xl-select" id="sort-select" onchange="renderSummary()">
@@ -650,13 +733,13 @@ select.xl-select {
     <table class="xl-summary-table">
       <thead>
         <tr>
-          <th style="text-align:left; width:32px"></th>
+          <th style="width:24px"></th>
           <th style="text-align:left;">名前</th>
-          <th style="width:60px">参加数</th>
-          <th style="width:90px">点数</th>
-          <th style="width:90px">馬</th>
-          <th style="width:90px">チップ点</th>
-          <th style="width:100px">総合計</th>
+          <th style="width:48px;text-align:center;">参加</th>
+          <th style="width:72px">点数</th>
+          <th style="width:64px">馬</th>
+          <th style="width:64px">チップ</th>
+          <th style="width:80px">総合計</th>
         </tr>
       </thead>
       <tbody id="summary-tbody"></tbody>
@@ -664,14 +747,7 @@ select.xl-select {
   </div>
 </div>
 
-<!-- ステータスバー（集計の下に隠れるので z-index 低め） -->
-<div id="statusbar">
-  <span id="status-rounds">荘数: 0</span>
-  <span id="status-participants">参加者: 0人</span>
-  <span style="margin-left:auto;">麻雀収支管理 v1.0</span>
-</div>
-
-<!-- ===== 参加者管理モーダル ===== -->
+<!-- 参加者管理モーダル -->
 <div class="modal-overlay" id="participant-modal">
   <div class="xl-modal">
     <div class="xl-modal-titlebar">
@@ -682,7 +758,7 @@ select.xl-select {
       <div id="participant-list"></div>
       <div class="xl-add-row-form">
         <input type="text" class="xl-text-input" id="new-participant-name"
-               placeholder="名前を入力して追加" maxlength="20"
+               placeholder="名前を入力" maxlength="20"
                onkeydown="if(event.key==='Enter') addParticipant()">
         <button class="xl-dialog-btn xl-dialog-btn-primary" onclick="addParticipant()">追加</button>
       </div>
@@ -694,7 +770,7 @@ select.xl-select {
   </div>
 </div>
 
-<!-- ===== 荘入力モーダル ===== -->
+<!-- 荘入力モーダル -->
 <div class="modal-overlay" id="round-modal">
   <div class="xl-modal">
     <div class="xl-modal-titlebar">
@@ -705,11 +781,11 @@ select.xl-select {
       <table class="round-input-table">
         <thead>
           <tr>
-            <th style="width:30px">#</th>
-            <th style="width:120px; text-align:left;">プレイヤー</th>
-            <th style="width:90px">点数</th>
-            <th style="width:90px">馬</th>
-            <th style="width:90px">チップ</th>
+            <th style="width:28px">#</th>
+            <th style="text-align:left;">プレイヤー</th>
+            <th style="width:80px">点数</th>
+            <th style="width:72px">馬</th>
+            <th style="width:72px">チップ</th>
           </tr>
         </thead>
         <tbody id="player-rows"></tbody>
@@ -735,9 +811,6 @@ const STORAGE_KEY = 'mahjong-score-app';
 let state = { date: today(), participants: [], rounds: [] };
 let editingRoundId = null;
 
-// ===================================================
-//  ユーティリティ
-// ===================================================
 function today() {
   const d = new Date();
   return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
@@ -759,9 +832,9 @@ function loadData() {
   const raw = localStorage.getItem(STORAGE_KEY);
   if (raw) { try { state = JSON.parse(raw); } catch(e) {} }
 }
-
 function updateFormulaBar(msg) {
-  document.getElementById('formula-bar-value').textContent = msg;
+  const el = document.getElementById('formula-bar-value');
+  if (el) el.textContent = msg;
 }
 
 // ===================================================
@@ -774,11 +847,20 @@ function init() {
   renderRounds();
   renderSummary();
   updateStatus();
+  adjustBodyPadding();
 }
 
 function updateStatus() {
   document.getElementById('status-rounds').textContent = `荘数: ${state.rounds.length}`;
   document.getElementById('status-participants').textContent = `参加者: ${state.participants.length}人`;
+}
+
+// 集計フッターの高さに合わせてbody paddingを動的調整
+function adjustBodyPadding() {
+  const summary = document.getElementById('summary-area');
+  const statusbar = document.getElementById('statusbar');
+  const h = summary.offsetHeight + (statusbar.offsetHeight || 0);
+  document.body.style.paddingBottom = (h + 8) + 'px';
 }
 
 // ===================================================
@@ -788,8 +870,7 @@ function renderRounds() {
   const tbody = document.getElementById('rounds-tbody');
   if (state.rounds.length === 0) {
     tbody.innerHTML = `<tr><td class="xl-rownum"></td><td colspan="7" class="xl-empty">荘がありません。「荘追加」から入力してください。</td></tr>`;
-    updateStatus();
-    return;
+    updateStatus(); return;
   }
   tbody.innerHTML = state.rounds.map((r, idx) => {
     const names = r.players.map(p => {
@@ -802,8 +883,8 @@ function renderRounds() {
     const total    = scoreSum + umaSum + chipSum;
     return `<tr>
       <td class="xl-rownum">${idx + 1}</td>
-      <td style="font-weight:700; color:var(--xl-green);">第${r.roundNo}荘</td>
-      <td>${names}</td>
+      <td style="font-weight:700;color:var(--xl-green);white-space:nowrap;">第${r.roundNo}荘</td>
+      <td style="text-align:left;font-size:13px;">${names}</td>
       <td class="${valClass(scoreSum)}">${fmtNum(scoreSum)}</td>
       <td class="${valClass(umaSum)}">${fmtNum(umaSum)}</td>
       <td class="${valClass(chipSum)}">${fmtNum(chipSum)}</td>
@@ -815,12 +896,12 @@ function renderRounds() {
     </tr>`;
   }).join('');
 
-  // 追加行
   tbody.innerHTML += `<tr class="xl-add-row">
     <td class="xl-rownum"></td>
-    <td colspan="7"><button class="xl-add-link" onclick="openRoundModal(null)">＋ 荘を追加...</button></td>
+    <td colspan="7" style="text-align:left;padding:6px 10px;">
+      <button class="xl-add-link" onclick="openRoundModal(null)">＋ 荘を追加...</button>
+    </td>
   </tr>`;
-
   updateStatus();
 }
 
@@ -828,60 +909,48 @@ function deleteRound(id) {
   if (!confirm('この荘を削除しますか？')) return;
   state.rounds = state.rounds.filter(r => r.id !== id);
   renumberRounds();
-  saveData();
-  renderRounds();
-  renderSummary();
+  saveData(); renderRounds(); renderSummary();
 }
 function renumberRounds() { state.rounds.forEach((r, i) => r.roundNo = i + 1); }
 
 // ===================================================
-//  参加者管理モーダル
+//  参加者管理
 // ===================================================
 function openParticipantModal() {
   renderParticipantList();
   document.getElementById('participant-modal').classList.add('open');
-  setTimeout(() => document.getElementById('new-participant-name').focus(), 50);
+  setTimeout(() => document.getElementById('new-participant-name').focus(), 100);
 }
 function closeParticipantModal() {
   document.getElementById('participant-modal').classList.remove('open');
-  renderSummary();
-  updateStatus();
+  renderSummary(); updateStatus();
 }
-
 function renderParticipantList() {
   const list = document.getElementById('participant-list');
   if (state.participants.length === 0) {
-    list.innerHTML = '<div class="xl-empty">参加者が登録されていません</div>';
-    return;
+    list.innerHTML = '<div class="xl-empty">参加者が登録されていません</div>'; return;
   }
   list.innerHTML = state.participants.map((p, i) => `
     <div class="xl-participant-row">
       <div class="xl-participant-name">${i+1}. ${p.name}</div>
-      <button class="xl-btn xl-btn-red" onclick="deleteParticipant('${p.id}')">削除</button>
+      <button class="xl-btn xl-btn-red" style="margin:0 8px;" onclick="deleteParticipant('${p.id}')">削除</button>
     </div>`).join('');
 }
-
 function addParticipant() {
   const input = document.getElementById('new-participant-name');
   const errEl = document.getElementById('participant-error');
   const name = input.value.trim();
   if (!name) { showErr(errEl, '名前を入力してください'); return; }
-  if (state.participants.some(p => p.name === name)) {
-    showErr(errEl, `「${name}」はすでに登録されています`); return;
-  }
+  if (state.participants.some(p => p.name === name)) { showErr(errEl, `「${name}」はすでに登録されています`); return; }
   state.participants.push({ id: uid(), name });
-  input.value = '';
-  hideErr(errEl);
-  renderParticipantList();
-  saveData();
+  input.value = ''; hideErr(errEl);
+  renderParticipantList(); saveData();
 }
-
 function deleteParticipant(id) {
   const inUse = state.rounds.some(r => r.players.some(p => p.participantId === id));
   if (inUse && !confirm('この参加者は荘に登録されています。\n削除しますか？')) return;
   state.participants = state.participants.filter(p => p.id !== id);
-  renderParticipantList();
-  saveData();
+  renderParticipantList(); saveData();
 }
 
 // ===================================================
@@ -890,8 +959,7 @@ function deleteParticipant(id) {
 function openRoundModal(roundId) {
   if (state.participants.length < 4) {
     alert('参加者を4人以上登録してから荘を追加してください');
-    openParticipantModal();
-    return;
+    openParticipantModal(); return;
   }
   editingRoundId = roundId;
   const isNew = roundId === null;
@@ -905,17 +973,11 @@ function openRoundModal(roundId) {
     existingRound = state.rounds.find(r => r.id === roundId);
   } else if (state.rounds.length > 0) {
     const prev = state.rounds[state.rounds.length - 1];
-    existingRound = {
-      players: prev.players.map(p => ({
-        participantId: p.participantId,
-        point: '', uma: '', chipCount: ''
-      }))
-    };
+    existingRound = { players: prev.players.map(p => ({ participantId: p.participantId, point: '', uma: '', chipCount: '' })) };
   }
   buildPlayerRows(existingRound);
   document.getElementById('round-modal').classList.add('open');
 }
-
 function closeRoundModal() {
   document.getElementById('round-modal').classList.remove('open');
 }
@@ -926,7 +988,6 @@ function buildPlayerRows(existingRound) {
   for (let i = 0; i < 4; i++) {
     const ep = existingRound ? existingRound.players[i] : null;
 
-    // select
     const sel = document.createElement('select');
     sel.className = 'xl-select-cell player-select';
     sel.innerHTML = '<option value="">-- 選択 --</option>' +
@@ -941,22 +1002,13 @@ function buildPlayerRows(existingRound) {
     [point, uma, chip].forEach(el => el.addEventListener('input', updateTotalPreview));
 
     const tr = document.createElement('tr');
-    const tdNum  = document.createElement('td');
-    tdNum.style.textAlign = 'center';
-    tdNum.style.color = 'var(--xl-text2)';
-    tdNum.style.fontSize = '11px';
+    const tdNum = document.createElement('td');
+    tdNum.style.cssText = 'text-align:center;color:var(--xl-text2);font-size:12px;padding:4px;';
     tdNum.textContent = i + 1;
-    const tdSel  = wrapTd(sel);
-    const tdPt   = wrapTd(point);
-    const tdUma  = wrapTd(uma);
-    const tdChip = wrapTd(chip);
-    tr.append(tdNum, tdSel, tdPt, tdUma, tdChip);
+    tr.append(tdNum, wrapTd(sel), wrapTd(point), wrapTd(uma), wrapTd(chip));
     tbody.appendChild(tr);
   }
-
   setupGridNav();
-  const first = tbody.querySelector('.point');
-  if (first) first.focus();
   updateTotalPreview();
 }
 
@@ -967,6 +1019,7 @@ function makeNumCell(cls, val, arrowNav) {
   inp.dataset.nav = arrowNav ? '1' : '0';
   inp.value = val === '' ? '' : val;
   inp.placeholder = '0';
+  inp.inputMode = 'numeric'; // iPhoneで数字キーボードを出す
   inp.addEventListener('focus', () => inp.select());
   return inp;
 }
@@ -974,41 +1027,27 @@ function makeNumCell(cls, val, arrowNav) {
 function wrapTd(el) {
   const td = document.createElement('td');
   td.style.padding = '0';
-  td.appendChild(el);
-  return td;
+  td.appendChild(el); return td;
 }
 
 function setupGridNav() {
   const getGrid = () => {
     const rows = document.querySelectorAll('#player-rows tr');
-    return Array.from(rows).map(row => [
-      row.querySelector('.point'),
-      row.querySelector('.uma')
-    ]);
+    return Array.from(rows).map(row => [row.querySelector('.point'), row.querySelector('.uma')]);
   };
   document.querySelectorAll('#player-rows input[data-nav="1"]').forEach(inp => {
     inp.addEventListener('keydown', e => {
       const grid = getGrid();
       let cr = -1, cc = -1;
-      grid.forEach((cols, r) => cols.forEach((cell, c) => {
-        if (cell === inp) { cr = r; cc = c; }
-      }));
+      grid.forEach((cols, r) => cols.forEach((cell, c) => { if (cell === inp) { cr = r; cc = c; } }));
       if (cr === -1) return;
       let nr = cr, nc = cc;
       if      (e.key === 'ArrowDown' || e.key === 'Enter') { e.preventDefault(); nr = (cr + 1) % grid.length; }
-      else if (e.key === 'ArrowUp')   { e.preventDefault(); nr = (cr - 1 + grid.length) % grid.length; }
-      else if (e.key === 'ArrowRight') {
-        e.preventDefault();
-        nc = cc + 1;
-        if (nc >= grid[cr].length) { nc = 0; nr = (cr + 1) % grid.length; }
-      }
-      else if (e.key === 'ArrowLeft') {
-        e.preventDefault();
-        nc = cc - 1;
-        if (nc < 0) { nc = grid[cr].length - 1; nr = (cr - 1 + grid.length) % grid.length; }
-      } else return;
-      const t = grid[nr][nc];
-      if (t) t.focus();
+      else if (e.key === 'ArrowUp')    { e.preventDefault(); nr = (cr - 1 + grid.length) % grid.length; }
+      else if (e.key === 'ArrowRight') { e.preventDefault(); nc = cc + 1; if (nc >= grid[cr].length) { nc = 0; nr = (cr + 1) % grid.length; } }
+      else if (e.key === 'ArrowLeft')  { e.preventDefault(); nc = cc - 1; if (nc < 0) { nc = grid[cr].length - 1; nr = (cr - 1 + grid.length) % grid.length; } }
+      else return;
+      const t = grid[nr][nc]; if (t) t.focus();
     });
   });
 }
@@ -1032,7 +1071,6 @@ function saveRound() {
   hideErr(errEl);
   const rows = document.querySelectorAll('#player-rows tr');
   const players = [], usedIds = [];
-
   for (let i = 0; i < rows.length; i++) {
     const row = rows[i];
     const pid = row.querySelector('.player-select')?.value;
@@ -1045,20 +1083,15 @@ function saveRound() {
     usedIds.push(pid);
     players.push({ participantId: pid, point: parseFloat(pt), uma: parseFloat(um), chipCount: ch === '' ? 0 : parseFloat(ch) });
   }
-
   const total = players.reduce((s, p) => s + p.point + p.uma + p.chipCount * 5, 0);
   if (total !== 0) { showErr(errEl, `⚠ 合計が0ではありません　現在: ${fmtNum(total)}`); return; }
-
   if (editingRoundId === null) {
     state.rounds.push({ id: uid(), roundNo: state.rounds.length + 1, players });
   } else {
     const idx = state.rounds.findIndex(r => r.id === editingRoundId);
     state.rounds[idx].players = players;
   }
-  closeRoundModal();
-  saveData();
-  renderRounds();
-  renderSummary();
+  closeRoundModal(); saveData(); renderRounds(); renderSummary();
 }
 
 // ===================================================
@@ -1067,9 +1100,7 @@ function saveRound() {
 function renderSummary() {
   const sortKey = document.getElementById('sort-select').value;
   const stats = {};
-  state.participants.forEach(p => {
-    stats[p.id] = { name: p.name, count: 0, scoreTotal: 0, umaTotal: 0, chipTotal: 0, grandTotal: 0 };
-  });
+  state.participants.forEach(p => { stats[p.id] = { name: p.name, count: 0, scoreTotal: 0, umaTotal: 0, chipTotal: 0, grandTotal: 0 }; });
   state.rounds.forEach(r => {
     r.players.forEach(p => {
       if (!stats[p.participantId]) return;
@@ -1081,25 +1112,23 @@ function renderSummary() {
       stats[p.participantId].grandTotal += p.point + p.uma + chip;
     });
   });
-
   let rows = Object.values(stats);
   rows.sort((a, b) => sortKey === 'name' ? a.name.localeCompare(b.name, 'ja') : b[sortKey] - a[sortKey]);
-
   const tbody = document.getElementById('summary-tbody');
   if (rows.length === 0) {
-    tbody.innerHTML = '<tr><td></td><td colspan="6" style="text-align:center;color:var(--xl-text2);font-style:italic;">参加者を登録してください</td></tr>';
-    return;
+    tbody.innerHTML = '<tr><td></td><td colspan="6" style="text-align:center;color:var(--xl-text2);font-style:italic;">参加者を登録してください</td></tr>'; return;
   }
   tbody.innerHTML = rows.map((r, i) => `
     <tr>
-      <td style="text-align:center;color:var(--xl-text2);font-size:11px;border:1px solid var(--xl-border);background:var(--xl-head);">${i+1}</td>
+      <td>${i+1}</td>
       <td>${r.name}</td>
-      <td style="text-align:center;">${r.count}</td>
+      <td>${r.count}</td>
       <td class="${valClass(r.scoreTotal)}">${fmtNum(r.scoreTotal)}</td>
       <td class="${valClass(r.umaTotal)}">${fmtNum(r.umaTotal)}</td>
       <td class="${valClass(r.chipTotal)}">${fmtNum(r.chipTotal)}</td>
       <td class="${valClass(r.grandTotal)}" style="font-weight:800;">${fmtNum(r.grandTotal)}</td>
     </tr>`).join('');
+  adjustBodyPadding();
 }
 
 // ===================================================
@@ -1130,9 +1159,8 @@ function exportPDF() {
     html += `<h3>第${r.roundNo}荘</h3><table><thead><tr><th>名前</th><th>点数</th><th>馬</th><th>チップ枚数</th><th>チップ点</th><th>合計</th></tr></thead><tbody>`;
     r.players.forEach(p => {
       const pt = state.participants.find(x => x.id === p.participantId);
-      const cp = p.chipCount * 5;
-      const tot = p.point + p.uma + cp;
-      html += `<tr><td>${pt ? pt.name : '?'}</td><td>${p.point}</td><td>${p.uma}</td><td>${p.chipCount}</td><td>${cp}</td><td class="${tot>0?'plus':tot<0?'minus':''}">${fmtNum(tot)}</td></tr>`;
+      const cp = p.chipCount * 5; const tot = p.point + p.uma + cp;
+      html += `<tr><td>${pt?pt.name:'?'}</td><td>${p.point}</td><td>${p.uma}</td><td>${p.chipCount}</td><td>${cp}</td><td class="${tot>0?'plus':tot<0?'minus':''}">${fmtNum(tot)}</td></tr>`;
     });
     html += '</tbody></table>';
   });
@@ -1160,14 +1188,65 @@ function exportPDF() {
 }
 
 // ===================================================
-//  エラー表示
+//  エラー
 // ===================================================
 function showErr(el, msg) { el.textContent = msg; el.classList.add('show'); }
 function hideErr(el) { el.classList.remove('show'); }
 
-// モーダル外クリック
+// モーダル外タップで閉じる
 document.getElementById('participant-modal').addEventListener('click', function(e) { if (e.target === this) closeParticipantModal(); });
 document.getElementById('round-modal').addEventListener('click', function(e) { if (e.target === this) closeRoundModal(); });
+
+// リサイズ時にpadding再調整
+window.addEventListener('resize', adjustBodyPadding);
+
+// ===================================================
+//  iOSキーボード対応：表示時にモーダルを押し上げる
+// ===================================================
+(function() {
+  const initialHeight = window.innerHeight;
+
+  function onResize() {
+    const currentHeight = window.innerHeight;
+    const keyboardHeight = initialHeight - currentHeight;
+
+    // スマホ幅のみ適用
+    if (window.innerWidth > 480) return;
+
+    ['round-modal', 'participant-modal'].forEach(id => {
+      const overlay = document.getElementById(id);
+      if (!overlay.classList.contains('open')) return;
+
+      if (keyboardHeight > 100) {
+        // キーボードが出た → モーダルを上から表示に切り替え
+        overlay.style.alignItems = 'flex-start';
+        overlay.style.paddingTop = '8px';
+        const modal = overlay.querySelector('.xl-modal');
+        modal.style.maxHeight = (currentHeight - 16) + 'px';
+      } else {
+        // キーボードが引っ込んだ → 下から表示に戻す
+        overlay.style.alignItems = 'flex-end';
+        overlay.style.paddingTop = '0';
+        const modal = overlay.querySelector('.xl-modal');
+        modal.style.maxHeight = '92vh';
+      }
+    });
+
+    adjustBodyPadding();
+  }
+
+  window.addEventListener('resize', onResize);
+
+  // フォーカス時にその入力欄が見えるようスクロール
+  document.addEventListener('focusin', function(e) {
+    if (window.innerWidth > 480) return;
+    const tag = e.target.tagName;
+    if (tag !== 'INPUT' && tag !== 'SELECT') return;
+    setTimeout(() => {
+      e.target.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }, 350); // キーボードが上がりきるのを待つ
+  });
+})();
 
 init();
 </script>
