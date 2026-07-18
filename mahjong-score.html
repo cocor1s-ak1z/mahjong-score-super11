@@ -286,21 +286,56 @@ html, body {
   -webkit-tap-highlight-color: transparent;
 }
 
-/* ===== 集計フッター ===== */
-#summary-area {
+/* ===== 下部タブバー ===== */
+#bottom-tabbar {
   position: fixed;
   bottom: 0; left: 0; right: 0;
   background: var(--xl-ribbon);
   border-top: 2px solid var(--xl-green);
-  z-index: 90;
-  padding: 6px 10px 8px;
+  z-index: 95;
+  display: flex;
   box-shadow: 0 -2px 8px var(--xl-shadow);
 }
+.bottom-tab {
+  flex: 1;
+  font-family: var(--font);
+  font-size: 11px;
+  font-weight: 600;
+  padding: 8px 4px 6px;
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  color: var(--xl-text2);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  -webkit-tap-highlight-color: transparent;
+  border-right: 1px solid var(--xl-border);
+}
+.bottom-tab:last-child { border-right: none; }
+.bottom-tab.active { color: var(--xl-green); background: #f0f7f0; }
+.bottom-tab-icon { font-size: 20px; line-height: 1; }
+
+/* ===== 集計パネル ===== */
+#summary-area {
+  position: fixed;
+  bottom: 52px; left: 0; right: 0;
+  background: var(--xl-cell);
+  border-top: 2px solid var(--xl-green);
+  z-index: 90;
+  padding: 8px 10px 10px;
+  box-shadow: 0 -4px 16px var(--xl-shadow);
+  display: none;
+  max-height: 55vh;
+  overflow: hidden;
+}
+#summary-area.open { display: block; }
 .summary-topbar {
   display: flex;
   align-items: center;
   gap: 8px;
-  margin-bottom: 4px;
+  margin-bottom: 6px;
 }
 .summary-label {
   font-size: 13px;
@@ -312,14 +347,14 @@ html, body {
 .summary-sort-wrap label { color: var(--xl-text2); }
 select.xl-select {
   font-family: var(--font);
-  font-size: 14px; /* ズーム防止のため16px未満にしない→実際は14でもSafariではOK、selectはズームしにくい */
+  font-size: 14px;
   background: var(--xl-cell);
   border: 1px solid var(--xl-border2);
   border-radius: 2px;
   padding: 3px 6px;
   color: var(--xl-text);
 }
-.summary-table-wrap { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+.summary-table-wrap { overflow-x: auto; overflow-y: auto; -webkit-overflow-scrolling: touch; max-height: calc(55vh - 50px); }
 
 .xl-summary-table {
   width: 100%;
@@ -618,10 +653,8 @@ select.xl-select {
   font-style: italic;
 }
 
-/* ===== 集計フッターの高さに合わせてbody padding-bottom調整 ===== */
-/* JSで動的に設定するため基本値のみ */
-body { padding-bottom: 180px; }
-@media (max-width: 480px) { body { padding-bottom: 160px; } }
+/* body padding-bottom: タブバー分 */
+body { padding-bottom: 60px; }
 
 /* スクロールバー */
 ::-webkit-scrollbar { width: 6px; height: 6px; }
@@ -630,7 +663,8 @@ body { padding-bottom: 180px; }
 
 /* iOSのsafe area対応 */
 @supports (padding-bottom: env(safe-area-inset-bottom)) {
-  #summary-area { padding-bottom: calc(8px + env(safe-area-inset-bottom)); }
+  #bottom-tabbar { padding-bottom: env(safe-area-inset-bottom); }
+  body { padding-bottom: calc(60px + env(safe-area-inset-bottom)); }
 }
 </style>
 </head>
@@ -713,7 +747,7 @@ body { padding-bottom: 180px; }
   <span style="margin-left:auto;">麻雀収支管理 v1.0</span>
 </div>
 
-<!-- 集計フッター -->
+<!-- 集計パネル（タブで開閉） -->
 <div id="summary-area">
   <div class="summary-topbar">
     <span class="summary-label">📊 集計</span>
@@ -745,6 +779,22 @@ body { padding-bottom: 180px; }
       <tbody id="summary-tbody"></tbody>
     </table>
   </div>
+</div>
+
+<!-- 下部タブバー -->
+<div id="bottom-tabbar">
+  <button class="bottom-tab active" id="tab-rounds" onclick="switchTab('rounds')">
+    <span class="bottom-tab-icon">📋</span>荘一覧
+  </button>
+  <button class="bottom-tab" id="tab-summary" onclick="switchTab('summary')">
+    <span class="bottom-tab-icon">📊</span>集計
+  </button>
+  <button class="bottom-tab" id="tab-add" onclick="openRoundModal(null)">
+    <span class="bottom-tab-icon rb-green">➕</span>荘追加
+  </button>
+  <button class="bottom-tab" id="tab-save" onclick="saveData()">
+    <span class="bottom-tab-icon">💾</span>保存
+  </button>
 </div>
 
 <!-- 参加者管理モーダル -->
@@ -824,9 +874,36 @@ function fmtNum(n) { return n > 0 ? '+' + n : String(n); }
 //  LocalStorage
 // ===================================================
 function saveData() {
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
-  updateFormulaBar('保存完了 ✓');
-  setTimeout(() => updateFormulaBar('荘一覧・集計シート'), 1500);
+  try {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+    showToast('💾 保存しました');
+    updateFormulaBar('保存完了 ✓');
+    setTimeout(() => updateFormulaBar('荘一覧・集計シート'), 2000);
+  } catch(e) {
+    showToast('⚠ 保存に失敗しました');
+  }
+}
+
+function showToast(msg) {
+  let t = document.getElementById('toast-msg');
+  if (!t) {
+    t = document.createElement('div');
+    t.id = 'toast-msg';
+    Object.assign(t.style, {
+      position: 'fixed', top: '70px', left: '50%',
+      transform: 'translateX(-50%)',
+      background: 'rgba(33,115,70,.95)', color: '#fff',
+      padding: '10px 20px', borderRadius: '20px',
+      zIndex: '9999', fontSize: '14px', fontWeight: '700',
+      boxShadow: '0 4px 12px rgba(0,0,0,.25)',
+      transition: 'opacity .3s', whiteSpace: 'nowrap'
+    });
+    document.body.appendChild(t);
+  }
+  t.textContent = msg;
+  t.style.opacity = '1';
+  clearTimeout(t._timer);
+  t._timer = setTimeout(() => { t.style.opacity = '0'; }, 2000);
 }
 function loadData() {
   const raw = localStorage.getItem(STORAGE_KEY);
@@ -847,7 +924,7 @@ function init() {
   renderRounds();
   renderSummary();
   updateStatus();
-  adjustBodyPadding();
+
 }
 
 function updateStatus() {
@@ -855,13 +932,21 @@ function updateStatus() {
   document.getElementById('status-participants').textContent = `参加者: ${state.participants.length}人`;
 }
 
-// 集計フッターの高さに合わせてbody paddingを動的調整
-function adjustBodyPadding() {
-  const summary = document.getElementById('summary-area');
-  const statusbar = document.getElementById('statusbar');
-  const h = summary.offsetHeight + (statusbar.offsetHeight || 0);
-  document.body.style.paddingBottom = (h + 8) + 'px';
+// タブ切り替え
+function switchTab(tab) {
+  const summaryArea = document.getElementById('summary-area');
+  document.querySelectorAll('.bottom-tab').forEach(t => t.classList.remove('active'));
+  if (tab === 'summary') {
+    summaryArea.classList.add('open');
+    document.getElementById('tab-summary').classList.add('active');
+    renderSummary();
+  } else {
+    summaryArea.classList.remove('open');
+    document.getElementById('tab-rounds').classList.add('active');
+  }
 }
+
+function adjustBodyPadding() {} // タブバー固定のため不要（CSS側で制御）
 
 // ===================================================
 //  荘一覧
@@ -1128,7 +1213,6 @@ function renderSummary() {
       <td class="${valClass(r.chipTotal)}">${fmtNum(r.chipTotal)}</td>
       <td class="${valClass(r.grandTotal)}" style="font-weight:800;">${fmtNum(r.grandTotal)}</td>
     </tr>`).join('');
-  adjustBodyPadding();
 }
 
 // ===================================================
@@ -1152,7 +1236,10 @@ function exportPDF() {
   @media print { button { display: none; } }
 </style></head><body>
 <h1>🀄 麻雀収支結果</h1><p>${dateStr}</p>
-<button onclick="window.print()" style="margin:8px 0;padding:6px 14px;font-size:13px;cursor:pointer;background:#217346;color:#fff;border:none;border-radius:3px;">🖨 印刷</button>`;
+<div style="display:flex;gap:10px;margin:12px 0;">
+  <button onclick="window.print()" style="padding:14px 28px;font-size:17px;font-weight:700;cursor:pointer;background:#217346;color:#fff;border:none;border-radius:6px;box-shadow:0 2px 6px rgba(0,0,0,.2);">🖨 印刷する</button>
+  <button onclick="window.close()" style="padding:14px 28px;font-size:17px;font-weight:700;cursor:pointer;background:#666;color:#fff;border:none;border-radius:6px;">← 戻る</button>
+</div>`;
 
   html += '<h2>荘別結果</h2>';
   state.rounds.forEach(r => {
@@ -1198,7 +1285,6 @@ document.getElementById('participant-modal').addEventListener('click', function(
 document.getElementById('round-modal').addEventListener('click', function(e) { if (e.target === this) closeRoundModal(); });
 
 // リサイズ時にpadding再調整
-window.addEventListener('resize', adjustBodyPadding);
 
 // ===================================================
 //  iOSキーボード対応：表示時にモーダルを押し上げる
@@ -1217,22 +1303,28 @@ window.addEventListener('resize', adjustBodyPadding);
       const overlay = document.getElementById(id);
       if (!overlay.classList.contains('open')) return;
 
+      const modal = overlay.querySelector('.xl-modal');
       if (keyboardHeight > 100) {
-        // キーボードが出た → モーダルを上から表示に切り替え
+        // キーボードが出た → overlayをキーボードの上の領域に限定、モーダルを上端に
+        overlay.style.position = 'fixed';
+        overlay.style.top = '0';
+        overlay.style.bottom = (keyboardHeight) + 'px';
         overlay.style.alignItems = 'flex-start';
-        overlay.style.paddingTop = '8px';
-        const modal = overlay.querySelector('.xl-modal');
-        modal.style.maxHeight = (currentHeight - 16) + 'px';
+        overlay.style.paddingTop = '0';
+        modal.style.maxHeight = (currentHeight - 8) + 'px';
+        modal.style.borderRadius = '0 0 12px 12px';
       } else {
-        // キーボードが引っ込んだ → 下から表示に戻す
+        // キーボードが引っ込んだ → 元に戻す
+        overlay.style.position = '';
+        overlay.style.top = '';
+        overlay.style.bottom = '';
         overlay.style.alignItems = 'flex-end';
         overlay.style.paddingTop = '0';
-        const modal = overlay.querySelector('.xl-modal');
         modal.style.maxHeight = '92vh';
+        modal.style.borderRadius = '12px 12px 0 0';
       }
     });
 
-    adjustBodyPadding();
   }
 
   window.addEventListener('resize', onResize);
